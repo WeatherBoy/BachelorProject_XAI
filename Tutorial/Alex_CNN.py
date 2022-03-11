@@ -18,7 +18,7 @@ from torch.autograd import Variable
 #%% Loading data
 
 trainset = torchvision.datasets.FashionMNIST(
-    root ='datasets',
+    root ='data/datasets',
     train = True,
     download = True,
     transform = transforms.ToTensor()
@@ -32,7 +32,7 @@ trainloader = DataLoader(
     )
 
 testset = torchvision.datasets.FashionMNIST(
-    root ='datasets',
+    root ='data/datasets',
     train = False,
     download = True,
     transform = transforms.ToTensor()
