@@ -4,9 +4,12 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from internally_replaced_utils import load_state_dict_from_url
-from utils import _log_api_usage_once
+# Testing
+import sys
+print(f"The path: {sys.path}")
 
+from Support_Code.internally_replaced_utils import load_state_dict_from_url
+from Support_Code.utils import _log_api_usage_once
 
 __all__ = [
     "ResNet",
