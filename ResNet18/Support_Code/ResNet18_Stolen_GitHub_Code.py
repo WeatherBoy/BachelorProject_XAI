@@ -6,10 +6,10 @@ from torch import Tensor
 
 # Testing
 import sys
-print(f"The path: {sys.path}")
+sys.path.append(".\Support_Code")
 
-from Support_Code.internally_replaced_utils import load_state_dict_from_url
-from Support_Code.utils import _log_api_usage_once
+from internally_replaced_utils import load_state_dict_from_url
+from utils import _log_api_usage_once
 
 __all__ = [
     "ResNet",
@@ -195,7 +195,8 @@ class ResNet(nn.Module):
             )
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
+        # NOTE: change 1 to 3 at some point.
+        self.conv1 = nn.Conv2d(1, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
