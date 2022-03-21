@@ -30,6 +30,6 @@
 # here follow the commands you want to execute
 
 #module load python3/3.8.2
-source venv_1/bin/activate
+source /zhome/06/a/147115/BSc_venv/bin/activate
 
-python3 hello.py
+/zhome/06/a/147115/BSc_venv/bin/python3 -u /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/Variational_Auto_Encoders/VAE_CIFAR100_test.py > /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/Variational_Auto_Encoders/outputVAE.txt
