@@ -5,7 +5,7 @@
 # Link from fiskemad...
 # Load data
 
-# In[1]:
+# In[4]:
 
 
 import torch
@@ -19,7 +19,7 @@ import numpy as np
 from torch import optim
 
 
-# In[2]:
+# In[5]:
 
 
 transform = transforms.Compose(
@@ -29,12 +29,12 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 batch_size = 128 # If you are using GPU, you can set the batch size to be 2, 4, 8, 16, 32..., this makes the GPUs work more effciently!
 
-trainset = torchvision.datasets.CIFAR100(root='./data', train=True,
+trainset = torchvision.datasets.CIFAR100(root='../data/datasetCIFAR100', train=True,
                                         download=True, transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                           shuffle=True, num_workers=2)
 
-testset = torchvision.datasets.CIFAR100(root='./data', train=False,
+testset = torchvision.datasets.CIFAR100(root='../data/datasetCIFAR100', train=False,
                                        download=True, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                          shuffle=False, num_workers=2)
@@ -46,7 +46,7 @@ classes = trainset.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[3]:
+# In[6]:
 
 
 cfg = {
@@ -123,7 +123,7 @@ class Decoder(nn.Module):
                 in_channels = cfg[i]
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)
-
+get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupyter nbconvert --to script VAE_CIFAR100_test.ipynb!jupaefasfkjbasvdbsdvbdvsbkjdsvkbjjfjnfsajafsn')
 class Model(nn.Module):
     def __init__(self, Encoder, Decoder):
         super(Model, self).__init__()
@@ -148,15 +148,15 @@ class Model(nn.Module):
         return x_hat, mean, log_var
 
 
-# In[4]:
+# In[7]:
 
 
 
 data_size = testset[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 10 # hyperparameter
+latent_dim = 64 # hyperparameter
 
-encoder = Encoder('VGG9',  input_dim=data_size,     latent_dim=latent_dim)
-decoder = Decoder('VGG9',  latent_dim=latent_dim,   output_dim = data_size)
+encoder = Encoder('VGG19',  input_dim=data_size,     latent_dim=latent_dim)
+decoder = Decoder('VGG19',  latent_dim=latent_dim,   output_dim = data_size)
 
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 
@@ -164,12 +164,10 @@ model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 # ## Traning
 # In CIFAR100. First define loss function
 
-# In[5]:
-
-
+# In[8]:
 
 lr = 1e-3
-epochs = 5
+epochs = 6
 #BCE_loss = nn.BCELoss() # should we use BCE loss here?
 
 def loss_function(x, x_hat, mean, log_var):
@@ -180,41 +178,9 @@ def loss_function(x, x_hat, mean, log_var):
 
 optimizer = optim.Adam(model.parameters(), lr= lr)
 
-
-# Test of output from the encoder and decoder:
-
-# In[6]:
-
-
-
-# Random sample
-x = torch.randn(2, 3, 32, 32)
-
-# Encoder test
-mean, var = encoder(x)
-print(f"The mean shape {mean.size()}, and mean {mean.size()}")
-#mean = mean.view(mean.size(0),latent_dim)
-#var = var.view(var.size(0),latent_dim)
-# Decoder
-epsilon = torch.randn_like(var).to(DEVICE)        # sampling epsilon        
-z = mean + var*epsilon
-
-print(f"Size of latent space {z.size()}")
-# unflatten it
-#z = z.view(z.size(0), latent_dim, 1, 1)
-
-x_hat = decoder(z)
-print(f"The size of x_hat {x_hat.size()} and original input x {x.size()}")
-#print(f"the loss from de- and encodering of x is {loss_function(x, x_hat, mean, var)}")
-
-# Model
-#x_hat, mean, var = model(x)
-
-
 # Training!
 
-# In[7]:
-
+# In[10]:
 
 
 def train(num_epochs, model, loader, plot : bool = False):
@@ -266,4 +232,15 @@ def train(num_epochs, model, loader, plot : bool = False):
     pass
 
 train(epochs, model, trainloader, True)
+
+
+# Save model
+
+# In[1]:
+
+
+saveModelPath = "../trainedModels/VAE_CIFAR100.pth"
+torch.save(model.state_dict(), saveModelPath)
+print("Model is saved!!")
+
 
