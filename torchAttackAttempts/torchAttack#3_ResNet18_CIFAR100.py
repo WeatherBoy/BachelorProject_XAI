@@ -24,7 +24,7 @@ from torchvision.transforms import ToTensor
 import numpy as np
 import matplotlib.pyplot as plt
 from os.path import exists
-get_ipython().run_line_magic('matplotlib', 'inline')
+#get_ipython().run_line_magic('matplotlib', 'inline')
 
 
 # Path for where we save the model
