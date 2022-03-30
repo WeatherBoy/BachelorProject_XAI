@@ -36,7 +36,7 @@ trainAgain = False
 
 # Inarguably a weird place to initialize the number of epochs
 # but it is a magic tool that will come in handy later.
-numEpochs = 20
+numEpochs = 25
 startEpoch = 0
 
 
@@ -96,7 +96,7 @@ print(f"Using {device} device")
 # In[3]:
 
 
-batch_size = 4
+batch_size = 128
 
 train_data = datasets.CIFAR100(
     root = '../data/datasetCIFAR100',
@@ -109,7 +109,7 @@ trainloader = torch.utils.data.DataLoader(
     train_data,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=2
+    num_workers=1
     )
 
 test_data = datasets.CIFAR100(
@@ -122,7 +122,7 @@ testloader = torch.utils.data.DataLoader(
     test_data,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=2
+    num_workers=1
     )
 
 classes = train_data.classes # or class_to_idx
@@ -150,34 +150,6 @@ plt.show()
 
 # print labels
 print(" ".join(f"{classes[labels[j]]:5s}" for j in range(batch_size)))
-
-
-# ### Intermediary test
-# Testing whether the pics are in range [0,1]
-
-# In[12]:
-
-
-I_Want_Intermediary_Test = True
-Nsamples = 10
-
-if I_Want_Intermediary_Test:
-    # Finding max of input images
-    from math import inf
-    maxNum = -inf
-    minNum = inf
-    for i in range(Nsamples):
-        sample_idx = torch.randint(len(train_data), size=(1,)).item()
-        img, _ = train_data[sample_idx]
-        tempMax = torch.max(img)
-        tempMin = torch.min(img)
-        if maxNum < tempMax:
-            maxNum = tempMax
-        if tempMin < minNum:
-            minNum = tempMin
-
-    msg(f"Smallest in number in these images: {minNum}\n Greatest number in sample images: {maxNum}")
-    
 
 
 # ## Downloading the VGG19 model
