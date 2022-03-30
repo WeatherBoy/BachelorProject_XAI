@@ -99,7 +99,7 @@ print(f"Using {device} device")
 # In[127]:
 
 
-batch_size = 256
+batch_size = 1024
 
 train_data = datasets.CIFAR100(
     root = '../data/datasetCIFAR100',
