@@ -36,7 +36,7 @@ trainAgain = True
 
 # Inarguably a weird place to initialize the number of epochs
 # but it is a magic tool that will come in handy later.
-numEpochs = 20
+numEpochs = 30
 startEpoch = 0
 
 
@@ -259,7 +259,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         
         current_batch_size = len(inputs)
 
-        if (batch + 1) % 500//current_batch_size == 0:
+        if batch % (500//current_batch_size) == 0:
             loss, current = loss.item(), batch * current_batch_size
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     

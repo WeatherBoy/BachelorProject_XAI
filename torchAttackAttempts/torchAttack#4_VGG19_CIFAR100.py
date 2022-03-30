@@ -36,7 +36,7 @@ trainAgain = False
 
 # Inarguably a weird place to initialize the number of epochs
 # but it is a magic tool that will come in handy later.
-numEpochs = 8
+numEpochs = 20
 startEpoch = 0
 
 
@@ -201,7 +201,7 @@ model = models.vgg19(pretrained=False).to(device)
 # In[6]:
 
 
-lrn_rt = 0.5e-3
+lrn_rt = 1e-3
 
 loss_fn = nn.CrossEntropyLoss()
 
@@ -287,8 +287,9 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        current_batch_size = len(inputs)
 
-        if batch % 1000 == 0:
+        if batch % (500//current_batch_size) == current_batch_size:
             loss, current = loss.item(), batch * len(inputs)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     
@@ -595,10 +596,4 @@ for i in range(len(epsilons)):
         plt.imshow(reshaped_ex)
 plt.tight_layout()
 plt.show()
-
-
-# In[7]:
-
-
-get_ipython().system('jupyter nbconvert --to script torchAttack#4_VGG19_CIFAR100.ipynb')
 
