@@ -1,4 +1,4 @@
-!/bin/sh
+#!/bin/sh
 ### General options
 ### -- specify queue --
 #BSUB -q hpc
@@ -24,8 +24,8 @@
 #BSUB -N
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o /Output_files/ResNet/Output_ResNet_%J.out
-#BSUB -e /Output_files/ResNet/Error_ResNet_%J.err
+#BSUB -o Output_files/ResNet/Output_ResNet_%J.out
+#BSUB -e Output_files/ResNet/Error_ResNet_%J.err
 
 # here follow the commands you want to execute
 

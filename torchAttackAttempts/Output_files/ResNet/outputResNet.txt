@@ -1,0 +1,16 @@
+Using cpu device
+Files already downloaded and verified
+pickup_truck dinosaur chimpanzee bus  
+>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<
+Smallest in number in these images: 0.0
+ Greatest number in sample images: 1.0
+>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<
+
+>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<
+There was no previously existing model. 
+Training will commence from beginning.
+>>>>>>>>>>>>>>>>>>>  <<<<<<<<<<<<<<<<<<<
+
+Epoch 1
+-------------------------------
+loss: 4.105846  [ 8192/50000]

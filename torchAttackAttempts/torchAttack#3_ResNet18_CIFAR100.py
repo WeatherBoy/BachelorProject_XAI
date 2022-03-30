@@ -25,7 +25,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from os.path import exists
-get_ipython().run_line_magic('matplotlib', 'inline')
+#get_ipython().run_line_magic('matplotlib', 'inline')
 
 
 # Path for where we save the model
