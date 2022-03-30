@@ -24,12 +24,12 @@
 #BSUB -N
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o Output_VGG19_%J.out
-#BSUB -e Error_VGG19_%J.err
+#BSUB -o /Output_files/VGG/Output_VGG19_%J.out
+#BSUB -e /Output_files/VGG/Error_VGG19_%J.err
 
 # here follow the commands you want to execute
 
 #module load python3/3.8.2
 source /zhome/06/a/147115/BSc_venv/bin/activate
 
-/zhome/06/a/147115/BSc_venv/bin/python3 -u /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/torchAttackAttempts/torchAttack#4_VGG19_CIFAR100.py > /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/torchAttackAttempts/outputVGG.txt
+/zhome/06/a/147115/BSc_venv/bin/python3 -u /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/torchAttackAttempts/torchAttack#4_VGG19_CIFAR100.py > /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/torchAttackAttempts/Output_files/VGG/outputVGG.txt

@@ -3,7 +3,7 @@
 ### -- specify queue --
 #BSUB -q hpc
 ### -- set the job Name --
-#BSUB -J Atk__ResNet18
+#BSUB -J Atk_ResNet18
 ### -- ask for number of cores (default: 1) --
 #BSUB -n 1
 ### -- specify that the cores must be on the same host --
@@ -24,12 +24,12 @@
 #BSUB -N
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o Output_ResNet_%J.out
-#BSUB -e Error_ResNet_%J.err
+#BSUB -o /Output_files/ResNet/Output_ResNet_%J.out
+#BSUB -e /Output_files/ResNet/Error_ResNet_%J.err
 
 # here follow the commands you want to execute
 
 #module load python3/3.8.2
 source /zhome/06/a/147115/BSc_venv/bin/activate
 
-/zhome/06/a/147115/BSc_venv/bin/python3 -u /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/torchAttackAttempts/torchAttack#3_ResNet18_CIFAR100.py > /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/torchAttackAttempts/outputResNet.txt
+/zhome/06/a/147115/BSc_venv/bin/python3 -u /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/torchAttackAttempts/torchAttack#3_ResNet18_CIFAR100.py > /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/torchAttackAttempts/Output_files/ResNet/outputResNet.txt
