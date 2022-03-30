@@ -106,7 +106,7 @@ trainloader = DataLoader(
     train_data,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=2
+    num_workers=1
     )
 
 test_data = datasets.CIFAR100(
@@ -119,7 +119,7 @@ testloader = DataLoader(
     test_data,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=2
+    num_workers=1
     )
 
 classes = train_data.classes # or class_to_idx
@@ -140,13 +140,13 @@ dataiter = iter(trainloader)
 images, labels = dataiter.next()
 
 # show images
-gridedImages = utils.make_grid(images)
+gridedImages = utils.make_grid(images[:4])
 npimg = gridedImages.numpy()
 plt.imshow(np.transpose(npimg, (1, 2, 0)))
 plt.show()
 
 # print labels
-print(" ".join(f"{classes[labels[j]]:5s}" for j in range(batch_size)))
+print(" ".join(f"{classes[labels[j]]:5s}" for j in range(4)))
 
 
 # ## Downloading the ResNet18 model
@@ -259,7 +259,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         
         current_batch_size = len(inputs)
 
-        if batch % (500//current_batch_size) == 0:
+        if batch % (10000//current_batch_size) == 0:
             loss, current = loss.item(), batch * current_batch_size
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     
