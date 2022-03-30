@@ -36,7 +36,7 @@ trainAgain = True
 
 # Inarguably a weird place to initialize the number of epochs
 # but it is a magic tool that will come in handy later.
-numEpochs = 8
+numEpochs = 20
 startEpoch = 0
 
 
@@ -47,7 +47,7 @@ startEpoch = 0
 
 
 def msg(
-    message: str,
+    message,
 ):
     """
     Input:
@@ -72,7 +72,6 @@ def msg(
     print(message)
     print(">" * n2 + "  " + "<" * n2 + "\n")
 
-
 # ## Basic configuration and epsilons
 # We need some epsilons indicating how much noise is added. This is kept as a list. For different sizes of attack. How great the attack. Then we also need to specify whether we use the GPU (Cuda) or not. With my potato the CPU is the only choice.
 
@@ -94,7 +93,7 @@ print(f"Using {device} device")
 # In[3]:
 
 
-batch_size = 4
+batch_size = 32
 
 train_data = datasets.CIFAR100(
     root = '../data/datasetCIFAR100',
@@ -150,34 +149,6 @@ plt.show()
 print(" ".join(f"{classes[labels[j]]:5s}" for j in range(batch_size)))
 
 
-# ### Intermediary test
-# Testing whether the pics are in range [0,1]
-
-# In[5]:
-
-
-I_Want_Intermediary_Test = True
-Nsamples = 10
-
-if I_Want_Intermediary_Test:
-    # Finding max of input images
-    from math import inf
-    maxNum = -inf
-    minNum = inf
-    for i in range(Nsamples):
-        sample_idx = torch.randint(len(train_data), size=(1,)).item()
-        img, _ = train_data[sample_idx]
-        tempMax = torch.max(img)
-        tempMin = torch.min(img)
-        if maxNum < tempMax:
-            maxNum = tempMax
-        if tempMin < minNum:
-            minNum = tempMin
-
-    msg(f"Smallest in number in these images: {minNum}\n Greatest number in sample images: {maxNum}")
-    
-
-
 # ## Downloading the ResNet18 model
 # 
 # Getting the model from the stolen GitHub code.
@@ -199,7 +170,7 @@ model = models.resnet18(pretrained=False).to(device)
 # In[15]:
 
 
-lrn_rt = 0.5e-3
+lrn_rt = 1e-3
 
 loss_fn = nn.CrossEntropyLoss()
 
@@ -285,9 +256,11 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        
+        current_batch_size = len(inputs)
 
-        if batch % 1000 == 0:
-            loss, current = loss.item(), batch * len(inputs)
+        if (batch + 1) % 500//current_batch_size == 0:
+            loss, current = loss.item(), batch * current_batch_size
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     
     train_loss /= num_batches        
@@ -598,8 +571,4 @@ plt.show()
 
 # Save file as py
 
-# In[9]:
-
-
-get_ipython().system('jupyter nbconvert --to script torchAttack#3_ResNet18_CIFAR100.ipynb')
 
