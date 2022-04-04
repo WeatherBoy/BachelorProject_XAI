@@ -1,4 +1,4 @@
-!/bin/sh 
+#!/bin/sh 
 ### General options 
 ### -- specify queue -- 
 #BSUB -q gpuv100
