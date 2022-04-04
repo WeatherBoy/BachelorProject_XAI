@@ -1,18 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # ResNet18 Test - from torchvison models
-# 
-# This code is a test of an adversarial attack on the ResNet18 architecture as proposed by: [Deep Residual Learning for Image Recognition](https://arxiv.org/pdf/1512.03385.pdf). This notebook focuses only on the CIFAR100 dataset of coloured pictures.
-# 
-# Apperently `torchvision` already had the model **ResNet18** under models... So this is an attempt with that model instead of all that GitHub code.. god damnit.
-# 
-
-# ## Basic Imports
-
-# In[124]:
-
-
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -20,17 +5,17 @@ from torch import optim
 from torchvision import datasets, utils, models
 from torch.utils.data import DataLoader
 from torchvision.transforms import ToTensor
+from torch.utils.data.sampler import SubsetRandomSampler
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 from os.path import exists
-#get_ipython().run_line_magic('matplotlib', 'inline')
 
 
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
-saveModelPath = "../trainedModels/adversarial_ResNet18_cifar100.pth"
+saveModelPath = "adversarial_ResNet18_cifar100.pth"
 
 ## Important if you want to train again, set this to True
 tryResumeTrain = True
@@ -43,12 +28,6 @@ completelyRestartTrain = True
 # Inarguably a weird place to initialize the number of epochs
 # but it is a magic tool that will come in handy later.
 numEpochs = 30
-
-
-# ## Dumb function
-# ...that I will probably only use a couple of times.
-
-# In[125]:
 
 
 def msg(
@@ -77,13 +56,6 @@ def msg(
     print(message)
     print(">" * n2 + "  " + "<" * n2 + "\n")
 
-
-# ## Basic configuration and epsilons
-# We need some epsilons indicating how much noise is added. This is kept as a list. For different sizes of attack. How great the attack. Then we also need to specify whether we use the GPU (Cuda) or not. With my potato the CPU is the only choice.
-
-# In[126]:
-
-
 epsilons = torch.linspace(0, 0.3, 6)
 eps_step_size = epsilons[1].item()
 
@@ -91,15 +63,11 @@ eps_step_size = epsilons[1].item()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {device} device")
 
+batch_size = 128
+validation_split = 0.2
+shuffle_dataset = False
+random_seed = 42
 
-# ## Downloading data
-# 
-# Downloading those pesky numbies.
-
-# In[127]:
-
-
-batch_size = 1024
 
 train_data = datasets.CIFAR100(
     root = '../data/datasetCIFAR100',
@@ -108,12 +76,24 @@ train_data = datasets.CIFAR100(
     download = True,            
 )
 
-trainloader = DataLoader(
-    train_data,
-    batch_size=batch_size,
-    shuffle=True,
-    num_workers=1
-    )
+# Creating data indices for training and validation splits:
+dataset_size = len(train_data)
+indices = list(range(dataset_size))
+split = int(np.floor(validation_split * dataset_size))
+if shuffle_dataset:
+    np.random.seed(random_seed)
+    np.random.shuffle(indices)
+train_indices, val_indices = indices[split:], indices[:split]
+msg("Split train data into trainset and validation set.")
+
+# Creating PT data samplers and loaders:
+train_sampler = SubsetRandomSampler(train_indices)
+valid_sampler = SubsetRandomSampler(val_indices)
+
+trainloader = DataLoader(train_data, batch_size=batch_size, 
+                                           sampler=train_sampler)
+validation_loader = DataLoader(train_data, batch_size=batch_size,
+                                                sampler=valid_sampler)
 
 test_data = datasets.CIFAR100(
     root = '../data/datasetCIFAR100', 
@@ -124,19 +104,10 @@ test_data = datasets.CIFAR100(
 testloader = DataLoader(
     test_data,
     batch_size=batch_size,
-    shuffle=True,
-    num_workers=1
+    shuffle=True
     )
 
 classes = train_data.classes # or class_to_idx
-
-
-# ## Show some images
-# 
-# Because we have done it so much now. It has just become tradition. We need to see some of dem images!
-
-# In[128]:
-
 
 # get some random training images
 # The "iter( )" function makes an object iterable.
@@ -153,13 +124,6 @@ plt.show()
 
 # print labels
 print(" ".join(f"{classes[labels[j]]:5s}" for j in range(4)))
-
-
-# ### Intermediary test
-# Testing whether the pics are in range [0,1]
-
-# In[129]:
-
 
 I_Want_Intermediary_Test = True
 Nsamples = 10
@@ -182,26 +146,8 @@ if I_Want_Intermediary_Test:
     msg(f"Smallest in number in these images: {minNum}\n Greatest number in sample images: {maxNum}")
     
 
-
-# ## Downloading the ResNet18 model
-# 
-# Getting the model from the stolen GitHub code.
-
-# In[130]:
-
-
 # Returns the resnet18 
 model = models.resnet18(pretrained=False).to(device)
-
-
-# ## Defining loss and optimization function
-# 
-# Both the loss function and the optimization function needs to be defined for this particular neural network.
-# They are defined as follows.
-# 
-# (Why it is always that CrossEntropyLoss.. I do not know)
-
-# In[131]:
 
 
 lrn_rt = 1e-3
@@ -209,14 +155,7 @@ lrn_rt = 1e-3
 loss_fn = nn.CrossEntropyLoss()
 
 # We are just going to use Adam, because it has proven to be effective.
-optimizer = optim.Adam(model.parameters(), lr=lrn_rt)
-
-
-# ## Checkpoint shenaniganz
-# It is quite useful to have checkpoints when training humongous models, that is what this code handles.
-
-# In[138]:
-
+optimizer = optim.Adam(model.parameters(), lr=lrn_rt, weight_decay=1e-4)
 
 # It is important that it is initialized to zero
 # if we are in the case that a model hasn't been trained yet.
@@ -297,13 +236,6 @@ else:
             
 
 
-# ## The Training and Testing Loop
-# 
-# The loops for training and testing:
-
-# In[120]:
-
-
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
@@ -312,6 +244,8 @@ def train_loop(dataloader, model, loss_fn, optimizer):
     for batch, data in enumerate(dataloader):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
+        inputs = inputs.to(device)
+        labels = labels.to(device)
         
         # Compute prediction and loss
         pred = model(inputs)
@@ -345,6 +279,8 @@ def test_loop(dataloader, model, loss_fn):
         for data in dataloader:
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
+            inputs = inputs.to(device)
+            labels = labels.to(device)
         
             pred = model(inputs)
             test_loss += loss_fn(pred, labels).item()
@@ -352,17 +288,9 @@ def test_loop(dataloader, model, loss_fn):
 
     test_loss /= num_batches
     correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    print(f"Test Error (on validation set): \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
     
     return 100*correct, test_loss
-
-
-# ## Training the network
-# 
-# Obviously we also need to fit some weights, so here is the code for training the network.
-
-# In[121]:
-
 
 # We train if we haven't already trained
 # or we want to train again.
@@ -371,7 +299,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     for t in range(startEpoch, numEpochs):
         print(f"Epoch {t+1}\n-------------------------------")
         accuracyTrain, avglossTrain = train_loop(trainloader, model, loss_fn, optimizer)
-        accuracyTest, avglossTest = test_loop(testloader, model, loss_fn)
+        accuracyTest, avglossTest = test_loop(validation_loader, model, loss_fn)
         
         # This is just extra for plotting
         accuracies[0,t], accuracies[1,t] = accuracyTest, accuracyTrain
@@ -391,4 +319,5 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
+
 
