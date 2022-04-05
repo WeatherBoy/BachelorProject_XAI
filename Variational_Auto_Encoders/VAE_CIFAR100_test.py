@@ -250,7 +250,7 @@ class Model(nn.Module):
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 256 # hyperparameter
-lr = 1e-3
+lr = 1e-4
 numEpochs = 30
 modeltype = 'VGG19'
 
@@ -532,7 +532,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[1]:
+# In[2]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
