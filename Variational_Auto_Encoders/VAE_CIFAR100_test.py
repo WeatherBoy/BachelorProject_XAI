@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[3]:
+# In[1]:
 
 
 import torch
@@ -44,7 +44,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[4]:
+# In[2]:
 
 
 def msg(
@@ -76,7 +76,7 @@ def msg(
 
 # ## Downloading data
 
-# In[5]:
+# In[3]:
 
 
 BATCH_SIZE = 128
@@ -136,7 +136,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[6]:
+# In[4]:
 
 
 cfg = {
@@ -244,7 +244,7 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[7]:
+# In[5]:
 
 
 
@@ -263,7 +263,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr = lr)#optim.SGD(model.parame
 
 # ## Test of dim
 
-# In[14]:
+# In[6]:
 
 
 
@@ -443,7 +443,8 @@ def test_loop(model, loader, loss_fn):
 
             # Compute loss
             x_hat, mean, log_var = model(x)
-            test_avg_loss += loss_fn(x, x_hat, mean, log_var).item()
+            loss, loss_funcs = loss_fn(x, x_hat, mean, log_var)
+            test_avg_loss += loss.item
 
     test_avg_loss /= num_batches
     return test_avg_loss
@@ -461,7 +462,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_loss  = train_loop(model, train_loader, loss_function, optimizer)
         val_avg_loss    = test_loop(model, val_loader, loss_function)
-
+        print(f"/n average valitation loss: {val_avg_loss}")
         # Save information for plotting
         losses[0,epoch], losses[1,epoch] = val_avg_loss, train_avg_loss    
 
