@@ -444,7 +444,7 @@ def test_loop(model, loader, loss_fn):
             # Compute loss
             x_hat, mean, log_var = model(x)
             loss, loss_funcs = loss_fn(x, x_hat, mean, log_var)
-            test_avg_loss += loss.item
+            test_avg_loss += loss.item()
 
     test_avg_loss /= num_batches
     return test_avg_loss
@@ -532,7 +532,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[ ]:
+# In[1]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
