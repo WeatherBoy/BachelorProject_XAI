@@ -383,7 +383,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[8]:
+# In[4]:
 
 
 
@@ -394,7 +394,7 @@ def loss_function(x, x_hat, mean, log_var):
     #scale = 0.00025
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
-    return reproduction_loss + 0.1*KLD, {"repo_loss": reproduction_loss, "KLD" : KLD} #*scale #* 0.5 
+    return reproduction_loss, {"repo_loss": reproduction_loss, "KLD" : KLD} #*scale #  + 0.1*KLD 
 
 
 # Train and testing loops
@@ -532,7 +532,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[2]:
+# In[5]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
