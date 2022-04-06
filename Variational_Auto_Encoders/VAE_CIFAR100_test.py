@@ -430,6 +430,10 @@ def train_loop(model, loader, loss_fn, optimizer):
         current_batch_size = len(x)
         # Check gradient
         if (batch_idx + 1) % (10000//current_batch_size) == 0:
+            # Print loss
+            loss, current = loss.item(), batch_idx * current_batch_size
+            print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD'].item()}  [{current:>5d}/{size:>5d}]")
+
             if model.Encoder.features[0].weight.grad == None:
                 print("No gradient...?")
             else:
@@ -437,12 +441,7 @@ def train_loop(model, loader, loss_fn, optimizer):
                 print(f"Gadient first layer per 500 step, min: {model.Encoder.features[0].weight.grad.data.min()} \t max: {model.Encoder.features[0].weight.grad.data.max()}") # FC_logvar.weight.grad 
           
         optimizer.step()
-        
-        if False: #(batch_idx + 1) % (500//current_batch_size) == 0:
-            loss, current = loss.item(), batch_idx * current_batch_size
-            print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD'].item()}  [{current:>5d}/{size:>5d}]")
-
-
+    
     train_avg_loss /= num_batches
     return train_avg_loss
 
@@ -548,7 +547,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[7]:
+# In[8]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
