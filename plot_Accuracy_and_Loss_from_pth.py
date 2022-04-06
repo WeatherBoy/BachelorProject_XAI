@@ -1,11 +1,13 @@
 import torch
-import os
 from matplotlib import pyplot as plt
+import tikzplotlib
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
+# Specify path to the .pth file here.
+# USE FORWARD SLASH!
 saveModelPath = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/ResNet18_CIFAR100_with_validation-3ade575a-8609-4f80-be02-160bcf9921ad/adversarial_ResNet18_cifar100.pth"
 
 checkpoint = torch.load(saveModelPath, map_location=torch.device(DEVICE))
@@ -29,4 +31,5 @@ ax2.legend()
 ax2.set_xlabel("epochs")
 ax2.set_ylabel("AVG loss")
 
+tikzplotlib.save("test_tikz.tex")
 plt.show()
