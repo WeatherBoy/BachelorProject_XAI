@@ -1,0 +1,196 @@
+% This file was created with tikzplotlib v0.10.1.
+\begin{tikzpicture}
+
+\definecolor{darkgray176}{RGB}{176,176,176}
+\definecolor{darkorange25512714}{RGB}{255,127,14}
+\definecolor{lightgray204}{RGB}{204,204,204}
+\definecolor{steelblue31119180}{RGB}{31,119,180}
+
+\begin{groupplot}[group style={group size=1 by 2}]
+\nextgroupplot[
+legend cell align={left},
+legend style={
+  fill opacity=0.8,
+  draw opacity=1,
+  text opacity=1,
+  at={(0.03,0.97)},
+  anchor=north west,
+  draw=lightgray204
+},
+tick align=outside,
+tick pos=left,
+x grid style={darkgray176},
+xmin=-0.45, xmax=31.45,
+xtick style={color=black},
+y grid style={darkgray176},
+ylabel={Accuracy},
+ymin=11.297625, ymax=99.074875,
+ytick style={color=black}
+]
+\addplot [semithick, steelblue31119180, mark=*, mark size=3, mark options={solid}]
+table {%
+1 22.84
+2 29.1
+3 34.69
+4 36.93
+5 38.66
+6 39.97
+7 40.31
+8 40.51
+9 41.13
+10 40.77
+11 39.94
+12 40.22
+13 40.13
+14 39.21
+15 40.17
+16 40.29
+17 40.16
+18 40.29
+19 40.41
+20 40.27
+21 41.04
+22 40.74
+23 40.91
+24 39.12
+25 39.79
+26 40.37
+27 40.48
+28 40.84
+29 40.09
+30 40.78
+};
+\addlegendentry{Test}
+\addplot [semithick, darkorange25512714, mark=*, mark size=3, mark options={solid}]
+table {%
+1 15.2875
+2 27.385
+3 35.4075
+4 41.3875
+5 46.9375
+6 52.075
+7 57.4025
+8 63.0425
+9 68.04
+10 73.8625
+11 78.6825
+12 82.84
+13 86.1425
+14 88.3575
+15 89.025
+16 90.4975
+17 91.74
+18 92.27
+19 92.6475
+20 92.515
+21 93.365
+22 93.175
+23 94.345
+24 94.205
+25 93.915
+26 94.4475
+27 94.6475
+28 95.085
+29 94.84
+30 94.4
+};
+\addlegendentry{Train}
+
+\nextgroupplot[
+legend cell align={left},
+legend style={
+  fill opacity=0.8,
+  draw opacity=1,
+  text opacity=1,
+  at={(0.03,0.03)},
+  anchor=south west,
+  draw=lightgray204
+},
+tick align=outside,
+tick pos=left,
+x grid style={darkgray176},
+xlabel={epochs},
+xmin=-0.45, xmax=31.45,
+xtick style={color=black},
+y grid style={darkgray176},
+ylabel={AVG loss},
+ymin=-0.0327861014388464, ymax=4.08840521697417,
+ytick style={color=black}
+]
+\addplot [semithick, steelblue31119180, mark=*, mark size=3, mark options={solid}]
+table {%
+1 3.18964103807377
+2 2.8037903821921
+3 2.55216638347771
+4 2.44714196724228
+5 2.40318723871738
+6 2.38103138344197
+7 2.39056036593039
+8 2.42593337161632
+9 2.55562464496757
+10 2.69964313808876
+11 2.87322284300116
+12 3.06975934777079
+13 3.18381706068787
+14 3.37474954882755
+15 3.40937794612933
+16 3.5123238533358
+17 3.55012523071675
+18 3.62085719350018
+19 3.71984161002726
+20 3.76646252221699
+21 3.73499885993668
+22 3.76775212227544
+23 3.80103249187711
+24 3.88963101483599
+25 3.87369853333582
+26 3.8504482975489
+27 3.83440515059459
+28 3.89004390752768
+29 3.90107833886448
+30 3.80615409416488
+};
+\addlegendentry{Test}
+\addplot [semithick, darkorange25512714, mark=*, mark size=3, mark options={solid}]
+table {%
+1 3.63605299620583
+2 2.88412368335663
+3 2.48728885361181
+4 2.19974374276
+5 1.95517735702161
+6 1.72886377820573
+7 1.50272562138189
+8 1.27216697748477
+9 1.07193757169925
+10 0.864151732133219
+11 0.691838783768419
+12 0.542889484677452
+13 0.438535006425251
+14 0.362349002648847
+15 0.338052836469949
+16 0.297643261714675
+17 0.25769321637127
+18 0.241532429505271
+19 0.225458806148543
+20 0.229821737153462
+21 0.206063033054812
+22 0.213260927639259
+23 0.177142117600948
+24 0.180170650061327
+25 0.188316045025477
+26 0.172642962263225
+27 0.168251267613504
+28 0.154540776670836
+29 0.164188960311226
+30 0.174430535790829
+};
+\addlegendentry{Train}
+\end{groupplot}
+
+\draw ({$(current bounding box.south west)!0.5!(current bounding box.south east)$}|-{$(current bounding box.south west)!0.98!(current bounding box.north west)$}) node[
+  scale=0.6,
+  anchor=north,
+  text=black,
+  rotate=0.0
+]{Accuracy and loss over 30 epochs};
+\end{tikzpicture}
