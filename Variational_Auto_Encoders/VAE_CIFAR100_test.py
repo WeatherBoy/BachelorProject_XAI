@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[2]:
+# In[18]:
 
 
 import torch
@@ -44,7 +44,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[3]:
+# In[19]:
 
 
 def msg(
@@ -76,7 +76,7 @@ def msg(
 
 # ## Downloading data
 
-# In[4]:
+# In[20]:
 
 
 BATCH_SIZE = 32 #128
@@ -136,7 +136,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[5]:
+# In[21]:
 
 
 cfg = {
@@ -244,7 +244,7 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[6]:
+# In[22]:
 
 
 
@@ -266,11 +266,11 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\
 
 # ## Test of dim
 
-# In[7]:
+# In[23]:
 
 
 
-DimCheck = False
+DimCheck = True
 
 if DimCheck == True:
     x = torch.randn(2,3,32,32)
@@ -303,7 +303,7 @@ if DimCheck == True:
 
 # ## Checkpointing stuff
 
-# In[8]:
+# In[24]:
 
 
 # It is important that it is initialized to zero
@@ -386,7 +386,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[9]:
+# In[25]:
 
 
 
@@ -397,12 +397,12 @@ def loss_function(x, x_hat, mean, log_var):
     scale = 0.1 #0.00025
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
-    return reproduction_loss + scale*KLD , {"repo_loss": reproduction_loss, "KLD scalede" : scale*KLD} #*scale #  
+    return reproduction_loss + scale*KLD , {"repo_loss": reproduction_loss, "KLD scalede" : (scale*KLD)} #*scale #  
 
 
 # Train and testing loops
 
-# In[10]:
+# In[26]:
 
 
 def train_loop(model, loader, loss_fn, optimizer):
@@ -432,13 +432,13 @@ def train_loop(model, loader, loss_fn, optimizer):
         if (batch_idx + 1) % (10000//current_batch_size) == 0:
             # Print loss
             loss, current = loss.item(), batch_idx * current_batch_size
-            print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD'].item()}  [{current:>5d}/{size:>5d}]")
+            print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD'].item()}  [{current:>5d}/{size:>5d}]\n")
 
             if model.Encoder.features[0].weight.grad == None:
                 print("No gradient...?")
             else:
                 
-                print(f"Gadient first layer per 500 step, min: {model.Encoder.features[0].weight.grad.data.min()} \t max: {model.Encoder.features[0].weight.grad.data.max()}") # FC_logvar.weight.grad 
+                print(f"Gadient first layer per 500 step, min: {model.Encoder.features[0].weight.grad.data.min()} \t max: {model.Encoder.features[0].weight.grad.data.max()}\n") # FC_logvar.weight.grad 
           
         optimizer.step()
     
@@ -465,7 +465,7 @@ def test_loop(model, loader, loss_fn):
 
 # Let the training begin!
 
-# In[11]:
+# In[27]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -547,7 +547,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[8]:
+# In[ ]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
