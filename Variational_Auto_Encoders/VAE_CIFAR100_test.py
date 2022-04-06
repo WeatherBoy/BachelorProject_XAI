@@ -79,7 +79,7 @@ def msg(
 # In[3]:
 
 
-BATCH_SIZE = 128
+BATCH_SIZE = 32 #128
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 NUM_WORKERS = 4
@@ -225,7 +225,7 @@ class Model(nn.Module):
         self.Decoder = Decoder
 
     def reparameterization(self, mean, logvar):
-        std = torch.exp(0.5*logvar) # e^log(sqrt(sigma^2)) = e^(0.5*sigma^2) = sigma
+        std = torch.exp(0.5*logvar) # remember exp(log(sqrt(var))) = exp(0.5*log(var))
         eps = torch.rand_like(std)
         return (mean + eps*std)
         
@@ -250,7 +250,7 @@ class Model(nn.Module):
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 256 # hyperparameter
-lr = 1e-4
+lr = 1e-5
 numEpochs = 30
 modeltype = 'VGG19'
 
@@ -259,6 +259,9 @@ decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size
 
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)#optim.SGD(model.parameters(), lr= lr)
+
+print(f"hyperparameters are:")
+msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs}")
 
 
 # ## Test of dim
@@ -287,7 +290,7 @@ if DimCheck == True:
 
     # Model pred
     x_hat, mean, logvar = model(x)
-
+    
     repoloss = nn.functional.binary_cross_entropy(x_hat, x)
     KLD_loss = torch.mean( -0.5 * torch.sum(1+ logvar - mean**2 - logvar.exp(),dim=1),dim = 0)
     loss = repoloss + KLD_loss
@@ -296,6 +299,9 @@ if DimCheck == True:
     print(f"Repo loss grad type: {repoloss.grad_fn}")
     print(f"KLD loss grad type: {KLD_loss.grad_fn}")
     print(f"loss grad type: {loss.grad_fn}")
+
+    
+print(model)
 
 
 # ## Checkpointing stuff
@@ -383,7 +389,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[4]:
+# In[8]:
 
 
 
@@ -417,15 +423,25 @@ def train_loop(model, loader, loss_fn, optimizer):
         loss, loss_funcs = loss_fn(x, x_hat, mean, log_var)
         train_avg_loss += loss.item()
 
-
+        
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+        
+        
             
-        current_batch_size = len(x)              
-            
+        current_batch_size = len(x)
+        # Check gradient
         if (batch_idx + 1) % (500//current_batch_size) == 0:
+            if model.Encoder.features[0].weight.grad == None:
+                print("No gradient...?")
+            else:
+                
+                print(f"Gadient first layer per 500 step, min: {model.Encoder.features[0].weight.grad.data.min()} \t max: {model.Encoder.features[0].weight.grad.data.max()}") # FC_logvar.weight.grad 
+          
+        optimizer.step()
+        
+        if False: #(batch_idx + 1) % (500//current_batch_size) == 0:
             loss, current = loss.item(), batch_idx * current_batch_size
             print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD'].item()}  [{current:>5d}/{size:>5d}]")
 
@@ -462,7 +478,8 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_loss  = train_loop(model, train_loader, loss_function, optimizer)
         val_avg_loss    = test_loop(model, val_loader, loss_function)
-        print(f"/n average valitation loss: {val_avg_loss}")
+        print(f"\n average train loss: {val_avg_loss}")
+        print(f"\n average valitation loss: {val_avg_loss}")
         # Save information for plotting
         losses[0,epoch], losses[1,epoch] = val_avg_loss, train_avg_loss    
 
@@ -532,7 +549,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[5]:
+# In[ ]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
