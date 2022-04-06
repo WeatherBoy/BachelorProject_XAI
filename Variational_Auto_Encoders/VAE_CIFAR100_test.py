@@ -159,6 +159,7 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         out = self.features(x)
+        out = out.to(DEVICE)
         #out = out.view(out.size(0), -1) # Flatten(?)
         mean = self.FC_mean(out)
         mean = mean.reshape(mean.size(0), mean.size(1), -1)
