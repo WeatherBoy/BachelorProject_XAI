@@ -475,8 +475,10 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_loss  = train_loop(model, train_loader, loss_function, optimizer)
         val_avg_loss    = test_loop(model, val_loader, loss_function)
+        
         print(f"\n  average train loss: {val_avg_loss}\n")
         print(f"\n  average valitation loss: {val_avg_loss}\n")
+
         # Save information for plotting
         losses[0,epoch], losses[1,epoch] = val_avg_loss, train_avg_loss    
 
@@ -546,7 +548,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[5]:
+# In[6]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
