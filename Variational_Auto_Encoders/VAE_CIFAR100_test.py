@@ -249,8 +249,8 @@ class Model(nn.Module):
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 256 # hyperparameter
-lr = 1e-5
+latent_dim = 128 # hyperparameter
+lr = 1e-4
 numEpochs = 30
 modeltype = 'VGG11'
 
@@ -394,10 +394,10 @@ def loss_function(x, x_hat, mean, log_var):
     reproduction_loss = nn.MSELoss()(x_hat, x)
     #KLD      = - 0.5 * torch.sum(1+ log_var - mean.pow(2) - log_var.exp())
     KLD = torch.mean( -0.5 * torch.sum(1+ log_var - mean**2 - log_var.exp(),dim=1),dim = 0) # Mean loss for the whole batch
-    #scale = 0.00025
+    scale = 0.1 #0.00025
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
-    return reproduction_loss, {"repo_loss": reproduction_loss, "KLD" : KLD} #*scale #  + 0.1*KLD 
+    return reproduction_loss + scale*KLD , {"repo_loss": reproduction_loss, "KLD scalede" : scale*KLD} #*scale #  
 
 
 # Train and testing loops
@@ -476,7 +476,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         train_avg_loss  = train_loop(model, train_loader, loss_function, optimizer)
         val_avg_loss    = test_loop(model, val_loader, loss_function)
         
-        print(f"\n  average train loss: {val_avg_loss}\n")
+        print(f"\n  average train loss: {val_avg_loss}")
         print(f"\n  average valitation loss: {val_avg_loss}\n")
 
         # Save information for plotting
@@ -488,7 +488,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': losses,
             }, saveModelPath)
-        print(f"Checkpoint at epoch {epoch + 1}")
+        print(f"Checkpoint at epoch {epoch + 1}\n")
     msg(f"Traning is done, final model saved to: \n'{saveModelPath}'")
 else:
     msg("Have already trained this model once!")
@@ -548,7 +548,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[6]:
+# In[7]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
