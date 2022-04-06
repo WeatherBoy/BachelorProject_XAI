@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[1]:
+# In[2]:
 
 
 import torch
@@ -44,7 +44,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[2]:
+# In[3]:
 
 
 def msg(
@@ -76,7 +76,7 @@ def msg(
 
 # ## Downloading data
 
-# In[3]:
+# In[4]:
 
 
 BATCH_SIZE = 32 #128
@@ -136,7 +136,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[4]:
+# In[5]:
 
 
 cfg = {
@@ -244,7 +244,7 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[5]:
+# In[6]:
 
 
 
@@ -252,7 +252,7 @@ channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel numb
 latent_dim = 256 # hyperparameter
 lr = 1e-5
 numEpochs = 30
-modeltype = 'VGG19'
+modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
 decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size)
@@ -266,7 +266,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\
 
 # ## Test of dim
 
-# In[6]:
+# In[7]:
 
 
 
@@ -300,13 +300,10 @@ if DimCheck == True:
     print(f"KLD loss grad type: {KLD_loss.grad_fn}")
     print(f"loss grad type: {loss.grad_fn}")
 
-    
-print(model)
-
 
 # ## Checkpointing stuff
 
-# In[7]:
+# In[8]:
 
 
 # It is important that it is initialized to zero
@@ -389,7 +386,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[8]:
+# In[9]:
 
 
 
@@ -405,7 +402,7 @@ def loss_function(x, x_hat, mean, log_var):
 
 # Train and testing loops
 
-# In[9]:
+# In[10]:
 
 
 def train_loop(model, loader, loss_fn, optimizer):
@@ -469,7 +466,7 @@ def test_loop(model, loader, loss_fn):
 
 # Let the training begin!
 
-# In[10]:
+# In[11]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -549,7 +546,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[ ]:
+# In[2]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
