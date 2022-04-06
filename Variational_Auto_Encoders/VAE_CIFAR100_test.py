@@ -429,7 +429,7 @@ def train_loop(model, loader, loss_fn, optimizer):
             
         current_batch_size = len(x)
         # Check gradient
-        if (batch_idx + 1) % (500//current_batch_size) == 0:
+        if (batch_idx + 1) % (10000//current_batch_size) == 0:
             if model.Encoder.features[0].weight.grad == None:
                 print("No gradient...?")
             else:
@@ -475,8 +475,8 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_loss  = train_loop(model, train_loader, loss_function, optimizer)
         val_avg_loss    = test_loop(model, val_loader, loss_function)
-        print(f"\n average train loss: {val_avg_loss}")
-        print(f"\n average valitation loss: {val_avg_loss}")
+        print(f"\n  average train loss: {val_avg_loss}\n")
+        print(f"\n  average valitation loss: {val_avg_loss}\n")
         # Save information for plotting
         losses[0,epoch], losses[1,epoch] = val_avg_loss, train_avg_loss    
 
@@ -546,7 +546,7 @@ batch_show = 7
 
 # Convert to python file!
 
-# In[2]:
+# In[5]:
 
 
 get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
