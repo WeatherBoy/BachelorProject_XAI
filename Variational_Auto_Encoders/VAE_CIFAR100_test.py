@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[18]:
+# In[1]:
 
 
 import torch
@@ -44,7 +44,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[19]:
+# In[2]:
 
 
 def msg(
@@ -76,7 +76,7 @@ def msg(
 
 # ## Downloading data
 
-# In[20]:
+# In[3]:
 
 
 BATCH_SIZE = 32 #128
@@ -136,7 +136,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[21]:
+# In[4]:
 
 
 cfg = {
@@ -159,7 +159,6 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         out = self.features(x)
-        out = out.to(DEVICE)
         #out = out.view(out.size(0), -1) # Flatten(?)
         mean = self.FC_mean(out)
         mean = mean.reshape(mean.size(0), mean.size(1), -1)
@@ -245,7 +244,7 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[22]:
+# In[5]:
 
 
 
@@ -267,11 +266,11 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\
 
 # ## Test of dim
 
-# In[23]:
+# In[6]:
 
 
 
-DimCheck = True
+DimCheck = False
 
 if DimCheck == True:
     x = torch.randn(2,3,32,32)
@@ -304,7 +303,7 @@ if DimCheck == True:
 
 # ## Checkpointing stuff
 
-# In[24]:
+# In[7]:
 
 
 # It is important that it is initialized to zero
@@ -387,7 +386,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[25]:
+# In[8]:
 
 
 
@@ -398,12 +397,12 @@ def loss_function(x, x_hat, mean, log_var):
     scale = 0.1 #0.00025
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
-    return reproduction_loss + scale*KLD , {"repo_loss": reproduction_loss, "KLD scalede" : (scale*KLD)} #*scale #  
+    return reproduction_loss + scale*KLD , {"loss sum": reproduction_loss + KLD, "repo_loss": reproduction_loss, "KLD scalede" : (KLD)} #*scale #  
 
 
 # Train and testing loops
 
-# In[26]:
+# In[9]:
 
 
 def train_loop(model, loader, loss_fn, optimizer):
@@ -412,6 +411,7 @@ def train_loop(model, loader, loss_fn, optimizer):
     num_batches = len(loader)
 
     for batch_idx, (x, _) in enumerate(loader):
+        
         x = x.to(DEVICE)
 
         # Model pred
@@ -425,7 +425,6 @@ def train_loop(model, loader, loss_fn, optimizer):
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
-        
         
             
         current_batch_size = len(x)
@@ -460,21 +459,21 @@ def test_loop(model, loader, loss_fn):
             test_avg_loss += loss.item()
 
     test_avg_loss /= num_batches
-    return test_avg_loss
+    return test_avg_loss 
 
 
 
 # Let the training begin!
 
-# In[27]:
+# In[10]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
 
     for epoch in range(startEpoch,numEpochs):
         print(f"Epoch {epoch +1}\n----------------------------------")
-        train_avg_loss  = train_loop(model, train_loader, loss_function, optimizer)
-        val_avg_loss    = test_loop(model, val_loader, loss_function)
+        train_avg_loss   = train_loop(model, train_loader, loss_function, optimizer)
+        val_avg_loss     = test_loop(model, val_loader, loss_function)
         
         print(f"\n  average train loss: {val_avg_loss}")
         print(f"\n  average valitation loss: {val_avg_loss}\n")
@@ -544,12 +543,3 @@ dataiter = iter(test_loader)
 x, labels = dataiter.next()
 batch_show = 7
 #batchplot(batch_show,x)
-
-
-# Convert to python file!
-
-# In[ ]:
-
-
-get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_test.ipynb')
-
