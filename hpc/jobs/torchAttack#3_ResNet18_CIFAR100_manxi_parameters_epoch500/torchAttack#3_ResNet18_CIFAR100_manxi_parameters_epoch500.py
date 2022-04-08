@@ -1,12 +1,9 @@
-from calendar import EPOCH
 import torch
-import torch.nn.functional as F
 from torch import nn
 from torch import optim
 from torchvision import datasets, utils, models
 from torch.utils.data import DataLoader, random_split
 from torchvision.transforms import ToTensor
-from torch.utils.data.sampler import SubsetRandomSampler
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -152,9 +149,7 @@ class ResNet18(nn.Module):
 model = ResNet18()
 
 
-## Learning rate, loss function, optimizer & scheduler ############################################
-lrn_rt = 1e-3
-
+## Loss function, optimizer & scheduler ###########################################################
 loss_fn = nn.CrossEntropyLoss()
 
 # Using the same parameters as Manxi here
@@ -178,7 +173,7 @@ trained_model_exists = exists(save_model_path)
 if trained_model_exists:
     if completely_restart_train:
         os.remove(save_model_path)
-        startEpoch = 0
+        start_epoch = 0
         msg("Previous model was deleted. \nRestarting training.")
     else:
         import collections
@@ -208,18 +203,18 @@ if trained_model_exists:
                 checkpoint['losses'] = checkpoint['losses'][:,:EPOCHS]
             
             # we save at the epoch we completed, but we wan't to start at the following epoch
-            startEpoch = checkpoint['epoch'] + 1 
+            start_epoch = checkpoint['epoch'] + 1 
             
-            if startEpoch < EPOCHS:
-                # we add one to startEpoch here (in the message) to make up for
+            if start_epoch < EPOCHS:
+                # we add one to start_epoch here (in the message) to make up for
                 # the for-loop being zero-indexed.
-                msg(f"Model will resume training from epoch: {startEpoch + 1}")
+                msg(f"Model will resume training from epoch: {start_epoch + 1}")
                 
                 # grapping our accuracies from the previously trained model
                 accuracies = checkpoint['accuracies']
                 losses = checkpoint['losses']
                 
-            elif try_resume_train and startEpoch >= EPOCHS:
+            elif try_resume_train and start_epoch >= EPOCHS:
                 msg("Model has already finished training. "
                     + "\nDo you wan't to delete previous model and start over?")
                 userInput = input("Input [y/n]:\t")
@@ -227,13 +222,13 @@ if trained_model_exists:
                     userInput = input("You must input either 'y' (yes) or 'n' (no):\t")
                 if userInput.lower() == "y":
                     os.remove(save_model_path)
-                    startEpoch = 0
+                    start_epoch = 0
                     msg("Previous model was deleted. \nRestarting training!")
                 elif userInput.lower() == "n":
                     msg("Model had already finished training and no new training will commence.")
                     
-            elif not try_resume_train and startEpoch >= EPOCHS:
-                msg(f"Model finished training at epoch: {startEpoch}")
+            elif not try_resume_train and start_epoch >= EPOCHS:
+                msg(f"Model finished training at epoch: {start_epoch}")
                 # grapping our accuracies from the previously trained model
                 accuracies = checkpoint['accuracies']
                 losses = checkpoint['losses']
@@ -241,7 +236,7 @@ if trained_model_exists:
 else:
     #Trained model doesn't exist
     msg("There was no previously existing model. \nTraining will commence from beginning.")
-    startEpoch = 0
+    start_epoch = 0
 
 
 
@@ -307,11 +302,11 @@ def test_loop(dataloader, model, loss_fn):
 ## Actually training ##############################################################################
 # We train if we haven't already trained
 # or we want to train again.
-if not trained_model_exists or try_resume_train or startEpoch < (EPOCHS - 1):
+if not trained_model_exists or try_resume_train or start_epoch < (EPOCHS - 1):
     best_loss = 100
     best_epoch = 0
     
-    for t in range(startEpoch, EPOCHS):
+    for t in range(start_epoch, EPOCHS):
         print(f"Epoch {t+1}\n-------------------------------")
         accuracyTrain, avglossTrain = train_loop(train_loader, model, loss_fn, optimizer)
         accuracyTest, avglossTest = test_loop(val_loader, model, loss_fn)
