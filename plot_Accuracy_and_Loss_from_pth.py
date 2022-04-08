@@ -8,18 +8,19 @@ print(f"Using {DEVICE} device")
 
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
-saveModelPath = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/ResNet18_CIFAR100_with_validation-3ade575a-8609-4f80-be02-160bcf9921ad/adversarial_ResNet18_cifar100.pth"
+save_model_path = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/torchAttack#3_ResNet18_CIFAR100_manxi_parameters_epoch500-8bbe23ee-66a5-4186-8a3f-24b257e8125e/adversarial_ResNet18_cifar100.pth"
 
-checkpoint = torch.load(saveModelPath, map_location=torch.device(DEVICE))
+checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
 accuracies = checkpoint['accuracies']
 losses = checkpoint['losses']
-numEpochs = checkpoint['epoch'] + 1
+num_epochs = len(accuracies[0])
 
-xVals = list(range(1, numEpochs + 1))
+xVals = list(range(1, num_epochs + 1))
+print("Test accuracies:", accuracies[0])
+print("Train accuracies:", accuracies[1])
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
-fig.suptitle(f"Accuracy and loss over {numEpochs} epochs")
-
+fig.suptitle(f"Accuracy and loss over {num_epochs} epochs")
 ax1.plot(xVals, accuracies[0], 'o-', label="Test")
 ax1.plot(xVals, accuracies[1], 'o-', label="Train")
 ax1.legend()
