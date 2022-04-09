@@ -543,3 +543,7 @@ dataiter = iter(test_loader)
 x, labels = dataiter.next()
 batch_show = 7
 #batchplot(batch_show,x)
+
+
+
+
