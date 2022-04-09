@@ -1,7 +1,17 @@
+"""
+Created on Tue Jan  4 21:40:44 2022
+
+@author: manli
+"""
+
+'''
+imports
+'''
+
 import torch
 from torch import nn
-from torch import optim
-from torchvision import datasets, utils, models
+from torchvision import datasets, utils
+from models import ResNet18
 from torch.utils.data import DataLoader, random_split
 from torchvision.transforms import ToTensor
 
@@ -14,8 +24,8 @@ from os.path import exists
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
 model_name = "adversarial_ResNet18_cifar100.pth"
-#save_model_path = "../trainedModels/" + model_name
-save_model_path = model_name
+#MODEL_PATH = "../trainedModels/" + model_name
+MODEL_PATH = model_name
 
 ## Important if you want to train again, set this to True
 try_resume_train = True
@@ -56,15 +66,18 @@ epsilons = torch.linspace(0, 0.3, 6)
 eps_step_size = epsilons[1].item()
 
 # Device configuration
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f"Using {device} device")
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Using {DEVICE} device")
 
 EPOCHS = 500
-BATCH_SIZE = 128
+BATCH_SIZE = 16
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
-NUM_WORKERS = 4
+NUM_WORKERS = 1
 LR = 1e-3
+
+msg(f"working directory: {os.getcwd()}")
+DATA_PATH = 'data/datasetCIFAR100'
 
 # Setting seeds ##############################################
 np.random.seed(RANDOM_SEED)
@@ -73,14 +86,14 @@ torch.cuda.manual_seed(RANDOM_SEED)
 ##############################################################
 
 trainval_set = datasets.CIFAR100(
-    root = '../data/datasetCIFAR100',
+    root = DATA_PATH,
     train = True,                         
     transform = ToTensor(), 
     download = True
     )
 
 test_set = datasets.CIFAR100(
-    root = '../data/datasetCIFAR100', 
+    root = DATA_PATH, 
     train = False, 
     transform = ToTensor()
     )
@@ -132,31 +145,18 @@ print(" ".join(f"{classes[labels[j]]:5s}" for j in range(4)))
 
 ## Getting the model ##############################################################################
 # Returns the resnet18 
-model = models.resnet18(pretrained=False).to(device)
+model = ResNet18(3, 100).to(DEVICE)
 
-class ResNet18(nn.Module):
-    def __init__(self, dp_rate=0.8):
-        super().__init__()
-        model.fc = nn.Sequential(
-            nn.Dropout(dp_rate),
-            model.fc
-        )
-        self.model = model
-    
-    def forward(self, x):
-        return self.model(x)
+## Learning rate, loss function, optimizer & scheduler ############################################
+lrn_rt = 1e-3
 
-model = ResNet18()
-
-
-## Loss function, optimizer & scheduler ###########################################################
 loss_fn = nn.CrossEntropyLoss()
 
 # Using the same parameters as Manxi here
-optimizer = optim.SGD(model.parameters(), lr=LR, 
+optimizer = torch.optim.SGD(model.parameters(), lr=LR, 
                             momentum=0.9, weight_decay=1e-3)
 
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
                                 mode='min', factor=0.1, 
                                     patience=10, verbose=True)
 
@@ -168,23 +168,23 @@ accuracies = np.zeros((2, EPOCHS))
 losses = np.zeros((2, EPOCHS))
             
 # exists is a function from os.path (standard library)
-trained_model_exists = exists(save_model_path)
+trained_model_exists = exists(MODEL_PATH)
 
 if trained_model_exists:
     if completely_restart_train:
-        os.remove(save_model_path)
-        start_epoch = 0
+        os.remove(MODEL_PATH)
+        startEpoch = 0
         msg("Previous model was deleted. \nRestarting training.")
     else:
         import collections
-        if not (type(torch.load(save_model_path)) is collections.OrderedDict):
+        if not (type(torch.load(MODEL_PATH)) is collections.OrderedDict):
             ## If it looks stupid but works it ain't stupid B)
             #
             # I think if it isn't that datatype, then it saved the Alex-way
             # and then we can load stuff.
             # Because if it is that datatype then it is for sure "just" the state_dict.
             
-            checkpoint = torch.load(save_model_path)
+            checkpoint = torch.load(MODEL_PATH)
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             
@@ -203,32 +203,32 @@ if trained_model_exists:
                 checkpoint['losses'] = checkpoint['losses'][:,:EPOCHS]
             
             # we save at the epoch we completed, but we wan't to start at the following epoch
-            start_epoch = checkpoint['epoch'] + 1 
+            startEpoch = checkpoint['epoch'] + 1 
             
-            if start_epoch < EPOCHS:
-                # we add one to start_epoch here (in the message) to make up for
+            if startEpoch < EPOCHS:
+                # we add one to startEpoch here (in the message) to make up for
                 # the for-loop being zero-indexed.
-                msg(f"Model will resume training from epoch: {start_epoch + 1}")
+                msg(f"Model will resume training from epoch: {startEpoch + 1}")
                 
                 # grapping our accuracies from the previously trained model
                 accuracies = checkpoint['accuracies']
                 losses = checkpoint['losses']
                 
-            elif try_resume_train and start_epoch >= EPOCHS:
+            elif try_resume_train and startEpoch >= EPOCHS:
                 msg("Model has already finished training. "
                     + "\nDo you wan't to delete previous model and start over?")
                 userInput = input("Input [y/n]:\t")
                 while userInput.lower() != 'y' and userInput.lower != 'n':
                     userInput = input("You must input either 'y' (yes) or 'n' (no):\t")
                 if userInput.lower() == "y":
-                    os.remove(save_model_path)
-                    start_epoch = 0
+                    os.remove(MODEL_PATH)
+                    startEpoch = 0
                     msg("Previous model was deleted. \nRestarting training!")
                 elif userInput.lower() == "n":
                     msg("Model had already finished training and no new training will commence.")
                     
-            elif not try_resume_train and start_epoch >= EPOCHS:
-                msg(f"Model finished training at epoch: {start_epoch}")
+            elif not try_resume_train and startEpoch >= EPOCHS:
+                msg(f"Model finished training at epoch: {startEpoch}")
                 # grapping our accuracies from the previously trained model
                 accuracies = checkpoint['accuracies']
                 losses = checkpoint['losses']
@@ -236,7 +236,7 @@ if trained_model_exists:
 else:
     #Trained model doesn't exist
     msg("There was no previously existing model. \nTraining will commence from beginning.")
-    start_epoch = 0
+    startEpoch = 0
 
 
 
@@ -249,8 +249,8 @@ def train_loop(dataloader, model, loss_fn, optimizer):
     for batch, data in enumerate(dataloader):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
-        inputs = inputs.to(device)
-        labels = labels.to(device)
+        inputs = inputs.to(DEVICE)
+        labels = labels.to(DEVICE)
         
         # Compute prediction and loss
         pred = model(inputs)
@@ -285,8 +285,8 @@ def test_loop(dataloader, model, loss_fn):
         for data in dataloader:
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+            inputs = inputs.to(DEVICE)
+            labels = labels.to(DEVICE)
         
             pred = model(inputs)
             test_loss += loss_fn(pred, labels).item()
@@ -302,11 +302,12 @@ def test_loop(dataloader, model, loss_fn):
 ## Actually training ##############################################################################
 # We train if we haven't already trained
 # or we want to train again.
-if not trained_model_exists or try_resume_train or start_epoch < (EPOCHS - 1):
+if not trained_model_exists or try_resume_train or startEpoch < (EPOCHS - 1):
     best_loss = 100
     best_epoch = 0
     
-    for t in range(start_epoch, EPOCHS):
+    msg("Will now begin training!")
+    for t in range(startEpoch, EPOCHS):
         print(f"Epoch {t+1}\n-------------------------------")
         accuracyTrain, avglossTrain = train_loop(train_loader, model, loss_fn, optimizer)
         accuracyTest, avglossTest = test_loop(val_loader, model, loss_fn)
@@ -323,20 +324,23 @@ if not trained_model_exists or try_resume_train or start_epoch < (EPOCHS - 1):
                 'optimizer_state_dict': optimizer.state_dict(),
                 'accuracies': accuracies,
                 'losses': losses
-                }, save_model_path)
+                }, MODEL_PATH)
             best_loss = avglossTest
             best_epoch = t
             msg(f"New best loss is: {avglossTest} \nCheckpoint at epoch: {t + 1}")
         else:
             # We always save accuracies and losses
-            checkpoint = torch.load(save_model_path)
+            checkpoint = torch.load(MODEL_PATH)
             checkpoint['accuracies'] = accuracies
             checkpoint['losses'] = losses
-            torch.save(checkpoint, save_model_path)
+            torch.save(checkpoint, MODEL_PATH)
             msg("Only accuracies and losses were updated")
             
-    msg(f"Done! Final model was saved to: \n'{save_model_path}'")
+    msg(f"Done! Final model was saved to: \n'{MODEL_PATH}'")
     
 else:
     msg("Have already trained this model once!")
 
+
+        
+        
