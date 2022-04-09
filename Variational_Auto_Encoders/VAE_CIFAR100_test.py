@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[1]:
+# In[ ]:
 
 
 import torch
@@ -44,7 +44,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[2]:
+# In[ ]:
 
 
 def msg(
@@ -76,7 +76,7 @@ def msg(
 
 # ## Downloading data
 
-# In[3]:
+# In[ ]:
 
 
 BATCH_SIZE = 32 #128
@@ -136,7 +136,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[4]:
+# In[ ]:
 
 
 cfg = {
@@ -244,7 +244,7 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[5]:
+# In[ ]:
 
 
 
@@ -266,7 +266,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\
 
 # ## Test of dim
 
-# In[6]:
+# In[ ]:
 
 
 
@@ -291,6 +291,7 @@ if DimCheck == True:
     # Model pred
     x_hat, mean, logvar = model(x)
     
+    loss, loss_funcs = loss_function(x, x_hat, mean, logvar)
     repoloss = nn.functional.binary_cross_entropy(x_hat, x)
     KLD_loss = torch.mean( -0.5 * torch.sum(1+ logvar - mean**2 - logvar.exp(),dim=1),dim = 0)
     loss = repoloss + KLD_loss
@@ -301,9 +302,12 @@ if DimCheck == True:
     print(f"loss grad type: {loss.grad_fn}")
 
 
+    print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD_scalede'].item()}\n")
+
+
 # ## Checkpointing stuff
 
-# In[7]:
+# In[ ]:
 
 
 # It is important that it is initialized to zero
@@ -386,7 +390,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[8]:
+# In[ ]:
 
 
 
@@ -397,12 +401,12 @@ def loss_function(x, x_hat, mean, log_var):
     scale = 0.1 #0.00025
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
-    return reproduction_loss + scale*KLD , {"loss sum": reproduction_loss + KLD, "repo_loss": reproduction_loss, "KLD scalede" : (KLD)} #*scale #  
+    return reproduction_loss + scale*KLD , {"loss_sum": reproduction_loss + KLD, "repo_loss": reproduction_loss, "KLD_scalede" : KLD} #*scale #  
 
 
 # Train and testing loops
 
-# In[9]:
+# In[ ]:
 
 
 def train_loop(model, loader, loss_fn, optimizer):
@@ -428,11 +432,12 @@ def train_loop(model, loader, loss_fn, optimizer):
         
             
         current_batch_size = len(x)
+        
         # Check gradient
-        if (batch_idx + 1) % (10000//current_batch_size) == 0:
+        if (batch_idx + 1) % (32//current_batch_size) == 0:
             # Print loss
             loss, current = loss.item(), batch_idx * current_batch_size
-            print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD'].item()}  [{current:>5d}/{size:>5d}]\n")
+            print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD_scalede'].item()}  [{current:>5d}/{size:>5d}]\n")
 
             if model.Encoder.features[0].weight.grad == None:
                 print("No gradient...?")
@@ -465,7 +470,7 @@ def test_loop(model, loader, loss_fn):
 
 # Let the training begin!
 
-# In[10]:
+# In[ ]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -543,7 +548,4 @@ dataiter = iter(test_loader)
 x, labels = dataiter.next()
 batch_show = 7
 #batchplot(batch_show,x)
-
-
-
 
