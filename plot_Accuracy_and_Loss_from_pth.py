@@ -8,7 +8,7 @@ print(f"Using {DEVICE} device")
 
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
-save_model_path = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/torchAttack#3_ResNet18_CIFAR100_manxi_parameters_epoch500-8bbe23ee-66a5-4186-8a3f-24b257e8125e/adversarial_ResNet18_cifar100.pth"
+save_model_path = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/torchAttack#3_ResNet18_CIFAR100_manxi_parameters_epoch150-d4019ea4-2d84-422c-9a1f-281dc7fc27f7/adversarial_ResNet18_cifar100.pth"
 
 checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
 accuracies = checkpoint['accuracies']
