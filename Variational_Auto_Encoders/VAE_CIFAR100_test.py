@@ -434,10 +434,10 @@ def train_loop(model, loader, loss_fn, optimizer):
         current_batch_size = len(x)
         
         # Check gradient
-        if (batch_idx + 1) % (32//current_batch_size) == 0:
+        if (batch_idx + 1) % (10000//current_batch_size) == 0:
             # Print loss
             loss, current = loss.item(), batch_idx * current_batch_size
-            print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD_scalede'].item()}  [{current:>5d}/{size:>5d}]\n")
+            print(f"loss: repo: {loss_funcs['repo_loss'] :>4f}\t KLD: {loss_funcs['KLD_scalede'].item() :>4f}  [{current:>5d}/{size:>5d}]\n")
 
             if model.Encoder.features[0].weight.grad == None:
                 print("No gradient...?")
