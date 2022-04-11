@@ -25,7 +25,7 @@
 #BSUB -N 
 ### -- Specify the output and error file. %J is the job-id -- 
 ### -- -o and -e mean append, -oo and -eo mean overwrite -- 
-#BSUB -o Output_files/Output_VGG19_%J.out 
+### #BSUB -o Output_files/Output_VGG19_%J.out 
 #BSUB -e Output_files/Error_VGG19_%J.err
 
 # here follow the commands you want to execute 
