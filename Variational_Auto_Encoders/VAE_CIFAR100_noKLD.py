@@ -261,7 +261,7 @@ model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)#optim.SGD(model.parameters(), lr= lr)
 
 print(f"hyperparameters are:")
-msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs}")
+msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs}\nBatch size \t\t{BATCH_SIZE}")
 
 
 # ## Test of dim
@@ -401,23 +401,23 @@ def train_loop(model, loader, optimizer):
     for batch_idx, (x, _) in enumerate(loader):
         
         x = x.to(DEVICE)
-
+       
         # Model pred
         x_hat, _, _ = model(x)
-
+        
         # Compute loss
         loss = nn.MSELoss()(x_hat, x)
         train_avg_loss += loss.item()
-
+        
         
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
-        
+       
         current_batch_size = len(x)
 
         # Check gradient
-        if (batch_idx + 1) % (32//current_batch_size) == 0:
+        if (batch_idx + 1) % (10000//current_batch_size) == 0:
             # Print loss
             loss, current = loss.item(), batch_idx * current_batch_size
             print(f"Repo loss: {loss:>3f}\t [{current:>5d}/{size:>5d}]")
@@ -427,7 +427,7 @@ def train_loop(model, loader, optimizer):
             else:
                 
                 print(f"Gadient first layer per 500 step, min: {model.Encoder.features[0].weight.grad.data.min()} \t max: {model.Encoder.features[0].weight.grad.data.max()}\n") # FC_logvar.weight.grad 
-          
+     
         optimizer.step()
     
     train_avg_loss /= num_batches
@@ -532,11 +532,4 @@ x, labels = dataiter.next()
 batch_show = 7
 #batchplot(batch_show,x)
 
-
-# Convert to python file!
-
-# In[ ]:
-
-
-get_ipython().system('jupyter nbconvert --to script VAE_CIFAR100_noKLD.ipynb')
 
