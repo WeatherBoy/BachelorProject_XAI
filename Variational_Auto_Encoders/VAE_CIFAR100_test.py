@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[12]:
+# In[2]:
 
 
 import torch
@@ -24,7 +24,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-saveModelPath = "../trainedModels/VAE_CIFAR100.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100.pth"
+save_loss_path = "../plottables/VAE_CIFAR100.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -44,7 +45,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[13]:
+# In[3]:
 
 
 def msg(
@@ -76,7 +77,7 @@ def msg(
 
 # ## Downloading data
 
-# In[14]:
+# In[4]:
 
 
 BATCH_SIZE = 32 #128
@@ -136,7 +137,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[15]:
+# In[5]:
 
 
 cfg = {
@@ -244,21 +245,25 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[16]:
+# In[8]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 10 # hyperparameter
 lr = 1e-5
-numEpochs = 100
+numEpochs = 70
 modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
 decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size)
 
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
-optimizer = torch.optim.Adam(model.parameters(), lr = lr)#optim.SGD(model.parameters(), lr= lr)
+
+#optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay=1e-3)#optim.SGD(model.parameters(), lr= lr)
+optimizer = torch.optim.SGD(model.parameters(), lr=lr, 
+                            momentum=0.9, weight_decay=1e-3)
+scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=lr, max_lr=0.0001)
 
 print(f"hyperparameters are:")
 msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
@@ -266,7 +271,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\
 
 # ## Test of dim
 
-# In[17]:
+# In[9]:
 
 
 
@@ -291,48 +296,47 @@ if DimCheck == True:
     # Model pred
     x_hat, mean, logvar = model(x)
     
-    loss, loss_funcs = loss_function(x, x_hat, mean, logvar)
     repoloss = nn.functional.binary_cross_entropy(x_hat, x)
     KLD_loss = torch.mean( -0.5 * torch.sum(1+ logvar - mean**2 - logvar.exp(),dim=1),dim = 0)
     loss = repoloss + KLD_loss
 
-    # Grad?
+    # Grad type?
     print(f"Repo loss grad type: {repoloss.grad_fn}")
     print(f"KLD loss grad type: {KLD_loss.grad_fn}")
     print(f"loss grad type: {loss.grad_fn}")
 
 
-    print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD_scalede'].item()}\n")
+    print(f"loss: repo: {repoloss :>7f}\t KLD: {KLD_loss}\n")
 
 
 # ## Checkpointing stuff
 
-# In[18]:
+# In[10]:
 
 
 # It is important that it is initialized to zero
 # if we are in the case that a model hasn't been trained yet.
-accuracies = np.zeros((2, numEpochs))
-losses = np.zeros((2, numEpochs))
+loss_train = np.zeros((2, numEpochs))
+loss_val = np.zeros((2, numEpochs))
             
 # exists is a function from os.path (standard library)
-trained_model_exists = exists(saveModelPath)
+trained_model_exists = exists(save_model_path)
 
 if trained_model_exists:
     if completelyRestartTrain:
-        os.remove(saveModelPath)
+        os.remove(save_model_path)
         startEpoch = 0
         msg("Previous model was deleted. \nRestarting training.")
     else:
         import collections
-        if not (type(torch.load(saveModelPath)) is collections.OrderedDict):
+        if not (type(torch.load(save_model_path)) is collections.OrderedDict):
             ## If it looks stupid but works it ain't stupid B)
             #
             # I think if it isn't that datatype, then it saved the Alex-way
             # and then we can load stuff.
             # Because if it is that datatype then it is for sure "just" the state_dict.
             
-            checkpoint = torch.load(saveModelPath)
+            checkpoint = torch.load(save_model_path)
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             
@@ -369,7 +373,7 @@ if trained_model_exists:
                 while userInput.lower() != 'y' and userInput.lower != 'n':
                     userInput = input("You must input either 'y' (yes) or 'n' (no):\t")
                 if userInput.lower() == "y":
-                    os.remove(saveModelPath)
+                    os.remove(save_model_path)
                     startEpoch = 0
                     msg("Previous model was deleted. \nRestarting training!")
                 elif userInput.lower() == "n":
@@ -390,7 +394,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[19]:
+# In[11]:
 
 
 
@@ -398,20 +402,23 @@ def loss_function(x, x_hat, mean, log_var):
     reproduction_loss = nn.MSELoss()(x_hat, x)
     #KLD      = - 0.5 * torch.sum(1+ log_var - mean.pow(2) - log_var.exp())
     KLD = torch.mean( -0.5 * torch.sum(1+ log_var - mean**2 - log_var.exp(),dim=1),dim = 0) # Mean loss for the whole batch
-    scale = 0.00025
+    KLD *= 0.00025
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
-    return reproduction_loss + scale*KLD , {"loss_sum": reproduction_loss + KLD, "repo_loss": reproduction_loss, "KLD_scalede" : KLD*scale} #*scale #  
+    return reproduction_loss, KLD 
 
 
 # Train and testing loops
 
-# In[20]:
+# In[12]:
 
 
 def train_loop(model, loader, loss_fn, optimizer):
+    model.train()
+
     size = len(loader.dataset)
-    train_avg_loss = 0
+    train_avg_KLD = 0
+    train_avg_repo = 0
     num_batches = len(loader)
 
     for batch_idx, (x, _) in enumerate(loader):
@@ -422,37 +429,45 @@ def train_loop(model, loader, loss_fn, optimizer):
         x_hat, mean, log_var = model(x)
 
         # Compute loss
-        loss, loss_funcs = loss_fn(x, x_hat, mean, log_var)
-        train_avg_loss += loss.item()
+        loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var)
+        loss = loss_repo + loss_KLD
 
+        train_avg_repo += loss_repo.item()
+        train_avg_KLD += loss_KLD.item()
         
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
-        
+        optimizer.step()
             
         current_batch_size = len(x)
         
         # Check gradient
-        if (batch_idx + 1) % (5000//current_batch_size) == 0:
+        if (batch_idx + 1) % (5000//current_batch_size) == 0 or batch_idx == 0:
             # Print loss
             loss, current = loss.item(), batch_idx * current_batch_size
-            print(f"loss: repo: {loss_funcs['repo_loss'] :>7f}\t KLD: {loss_funcs['KLD_scalede'].item()}  [{current:>5d}/{size:>5d}]\n")
+            print(f"loss: repo: {loss_repo.item() :>4f}\t KLD scaled: {loss_KLD.item() :>4f}  [{current+1:>5d}/{size:>5d}]\n")
 
             if model.Encoder.features[0].weight.grad == None:
                 print("No gradient...?")
             else:
                 
-                print(f"Gadient first layer at step, min: {model.Encoder.features[0].weight.grad.data.min()} \t max: {model.Encoder.features[0].weight.grad.data.max()}\n") # FC_logvar.weight.grad 
-          
-        optimizer.step()
-    
-    train_avg_loss /= num_batches
-    return train_avg_loss
+                print(f"Gadient first layer at step, \nmin: {model.Encoder.features[0].weight.grad.data.min() :>5f} \t max: {model.Encoder.features[0].weight.grad.data.max() :>5f}\n") # FC_logvar.weight.grad 
+        
+        
+    train_avg_repo /= num_batches
+    train_avg_KLD /= num_batches
+
+    scheduler.step(train_avg_repo + train_avg_KLD) 
+
+    return train_avg_repo, train_avg_KLD
 
 def test_loop(model, loader, loss_fn):
+    model.eval()
+
     num_batches = len(loader)
-    test_avg_loss = 0
+    val_avg_KLD = 0
+    val_avg_repo = 0
     with torch.no_grad():
         for (x,_) in loader:
             # Get data
@@ -460,50 +475,60 @@ def test_loop(model, loader, loss_fn):
 
             # Compute loss
             x_hat, mean, log_var = model(x)
-            loss, loss_funcs = loss_fn(x, x_hat, mean, log_var)
-            test_avg_loss += loss.item()
+            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var)
 
-    test_avg_loss /= num_batches
-    return test_avg_loss 
+            val_avg_repo += loss_repo.item()
+            val_avg_KLD += loss_KLD.item()
+
+    val_avg_repo /= num_batches
+    val_avg_KLD /= num_batches
+    return val_avg_repo, val_avg_KLD 
 
 
 
 # Let the training begin!
 
-# In[21]:
+# In[26]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
+    best_loss = np.inf
 
+    msg("Will now begin training!")
     for epoch in range(startEpoch,numEpochs):
         print(f"Epoch {epoch +1}\n----------------------------------")
-        train_avg_loss   = train_loop(model, train_loader, loss_function, optimizer)
-        val_avg_loss     = test_loop(model, val_loader, loss_function)
-        
-        print(f"\n  average train loss: {val_avg_loss}")
-        print(f"\n  average valitation loss: {val_avg_loss}\n")
+        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer)
+        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function)
 
         # Save information for plotting
-        losses[0,epoch], losses[1,epoch] = val_avg_loss, train_avg_loss    
+        loss_train[0,epoch], loss_train[1,epoch]    = train_avg_repo, train_avg_KLD
+        loss_val[0, epoch], loss_val[1, epoch]      = val_avg_repo, val_avg_KLD     
+        avg_loss_val = val_avg_repo + val_avg_KLD
 
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': losses,
-            }, saveModelPath)
-        print(f"Checkpoint at epoch {epoch + 1}\n")
-    msg(f"Traning is done, final model saved to: \n'{saveModelPath}'")
+        if avg_loss_val < best_loss:
+            # We only save a checkpoint if our model is performing better
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                }, save_model_path)
+            best_loss = avg_loss_val
+
+            msg(f"New best loss is: {avg_loss_val} \nCheckpoint at epoch: {epoch + 1}")
+        else:
+            msg("Only test and val losses were updated")
+        
+        torch.save({"train_loss" : loss_train, "val_loss" : loss_val}, save_loss_path)
+            
+    msg(f"Done! Final model was saved to: \n'{save_model_path}'")
+    
 else:
     msg("Have already trained this model once!")
-
-# Save final model 
-torch.save(model.state_dict(), saveModelPath)
 
 
 # # Plot reproduction 
 
-# In[ ]:
+# In[13]:
 
 
 import matplotlib.pyplot as plt
@@ -546,6 +571,13 @@ def batchplot(batch_show,image):
 
 dataiter = iter(test_loader)
 x, labels = dataiter.next()
+x_hat, mean, var = model(x)
+
+
+
 batch_show = 7
+
 #batchplot(batch_show,x)
+
+
 
