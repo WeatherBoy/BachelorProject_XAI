@@ -24,7 +24,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-saveModelPath = "../trainedModels/VAE_CIFAR100.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_noKLD.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_noKLD.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -258,7 +259,11 @@ encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
 decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size)
 
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
-optimizer = torch.optim.Adam(model.parameters(), lr = lr)#optim.SGD(model.parameters(), lr= lr)
+#optimizer = torch.optim.Adam(model.parameters(), lr = lr)#optim.SGD(model.parameters(), lr= lr)
+optimizer = torch.optim.SGD(model.parameters(), lr=lr, 
+                            momentum=0.9, weight_decay=1e-3)
+scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=lr, max_lr=0.0001)
+
 
 print(f"hyperparameters are:")
 msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs}\nBatch size \t\t{BATCH_SIZE}")
@@ -312,31 +317,31 @@ if DimCheck == True:
 
 # It is important that it is initialized to zero
 # if we are in the case that a model hasn't been trained yet.
-accuracies = np.zeros((2, numEpochs))
-losses = np.zeros((2, numEpochs))
+loss_train = np.zeros(numEpochs)
+loss_val = np.zeros(numEpochs)
             
 # exists is a function from os.path (standard library)
-trained_model_exists = exists(saveModelPath)
+trained_model_exists = exists(save_model_path)
 
 if trained_model_exists:
     if completelyRestartTrain:
-        os.remove(saveModelPath)
+        os.remove(save_model_path)
         startEpoch = 0
         msg("Previous model was deleted. \nRestarting training.")
     else:
         import collections
-        if not (type(torch.load(saveModelPath)) is collections.OrderedDict):
+        if not (type(torch.load(save_model_path)) is collections.OrderedDict):
             ## If it looks stupid but works it ain't stupid B)
             #
             # I think if it isn't that datatype, then it saved the Alex-way
             # and then we can load stuff.
             # Because if it is that datatype then it is for sure "just" the state_dict.
             
-            checkpoint = torch.load(saveModelPath)
+            checkpoint = torch.load(save_model_path)
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             
-            num_previous_epochs = checkpoint['accuracies'].shape[1]
+            num_previous_epochs = checkpoint['train_'].shape[1]
             
             if num_previous_epochs < numEpochs:
                 # if we trained to fewer epochs previously,
@@ -369,7 +374,7 @@ if trained_model_exists:
                 while userInput.lower() != 'y' and userInput.lower != 'n':
                     userInput = input("You must input either 'y' (yes) or 'n' (no):\t")
                 if userInput.lower() == "y":
-                    os.remove(saveModelPath)
+                    os.remove(save_model_path)
                     startEpoch = 0
                     msg("Previous model was deleted. \nRestarting training!")
                 elif userInput.lower() == "n":
@@ -394,6 +399,7 @@ else:
 
 
 def train_loop(model, loader, optimizer):
+    model.train()
     size = len(loader.dataset)
     train_avg_loss = 0
     num_batches = len(loader)
@@ -434,6 +440,7 @@ def train_loop(model, loader, optimizer):
     return train_avg_loss
 
 def test_loop(model, loader):
+    model.eval()
     num_batches = len(loader)
     test_avg_loss = 0
     with torch.no_grad():
@@ -460,28 +467,34 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
 
     for epoch in range(startEpoch,numEpochs):
         print(f"Epoch {epoch +1}\n----------------------------------")
-        train_avg_loss   = train_loop(model, train_loader, optimizer)
-        val_avg_loss     = test_loop(model, val_loader)
+        avg_loss_train   = train_loop(model, train_loader, optimizer)
+        avg_loss_val     = test_loop(model, val_loader)
         
-        print(f"\n  average train loss: {val_avg_loss}")
-        print(f"\n  average valitation loss: {val_avg_loss}\n")
+        print(f"\n  average train loss: {avg_loss_train}")
+        print(f"\n  average valitation loss: {avg_loss_val}\n")
 
         # Save information for plotting
-        losses[0,epoch], losses[1,epoch] = val_avg_loss, train_avg_loss    
+        loss_val[epoch],loss_train[epoch]  = avg_loss_val, avg_loss_train    
+        
+        if avg_loss_val < best_loss:
+            # We only save a checkpoint if our model is performing better
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                }, save_model_path)
+            best_loss = avg_loss_val
 
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': losses,
-            }, saveModelPath)
-        print(f"Checkpoint at epoch {epoch + 1}\n")
-    msg(f"Traning is done, final model saved to: \n'{saveModelPath}'")
+            msg(f"New best loss is: {avg_loss_val} \nCheckpoint at epoch: {epoch + 1}")
+        else:
+            msg("Only test and val losses were updated")
+        
+        torch.save({"train_loss" : loss_train, "val_loss" : loss_val}, save_loss_path)
+            
+    msg(f"Done! Final model was saved to: \n'{save_model_path}'")
+    
 else:
     msg("Have already trained this model once!")
-
-# Save final model 
-torch.save(model.state_dict(), saveModelPath)
 
 
 # # Plot reproduction 
