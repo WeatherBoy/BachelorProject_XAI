@@ -579,5 +579,3 @@ batch_show = 7
 
 #batchplot(batch_show,x)
 
-
-

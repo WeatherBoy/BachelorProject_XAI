@@ -252,7 +252,7 @@ class Model(nn.Module):
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 10 # hyperparameter
 lr = 1e-5
-numEpochs = 50
+numEpochs = 150
 modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
@@ -437,6 +437,8 @@ def train_loop(model, loader, optimizer):
         optimizer.step()
     
     train_avg_loss /= num_batches
+    scheduler.step(train_avg_loss) 
+    
     return train_avg_loss
 
 def test_loop(model, loader):
