@@ -464,6 +464,7 @@ def test_loop(model, loader):
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
+    best_loss = np.inf
 
     for epoch in range(startEpoch,numEpochs):
         print(f"Epoch {epoch +1}\n----------------------------------")
