@@ -252,7 +252,7 @@ class Model(nn.Module):
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 10 # hyperparameter
 lr = 1e-5
-numEpochs = 70
+numEpochs = 150
 modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
@@ -578,4 +578,3 @@ x_hat, mean, var = model(x)
 batch_show = 7
 
 #batchplot(batch_show,x)
-
