@@ -251,7 +251,7 @@ class Model(nn.Module):
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 10 # hyperparameter
-lr = 3e-5
+lr = 1e-5
 numEpochs = 50
 modeltype = 'VGG11'
 
@@ -423,7 +423,7 @@ def train_loop(model, loader, optimizer):
         current_batch_size = len(x)
 
         # Check gradient
-        if (batch_idx + 1) % (10000//current_batch_size) == 0:
+        if (batch_idx + 1) % (10000//current_batch_size) == 0 or batch_idx == 0:
             # Print loss
             loss, current = loss.item(), batch_idx * current_batch_size
             print(f"Repo loss: {loss:>3f}\t [{current:>5d}/{size:>5d}]")
