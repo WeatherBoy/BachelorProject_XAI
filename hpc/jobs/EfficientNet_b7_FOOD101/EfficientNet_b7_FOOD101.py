@@ -13,7 +13,7 @@ from os.path import exists
 
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
-model_name = "adversarial_efficientnet_b7_cifar100.pth"
+model_name = "adversarial_efficientnet_by_Food101.pth"
 #MODEL_PATH = "../trainedModels/" + model_name
 MODEL_PATH = model_name
 
@@ -60,17 +60,17 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
 EPOCHS = 30
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 NUM_WORKERS = 1
-LR = 3e-2
+LR = 15e-3
 MIN_LR = 1e-5
 SGD_MOMENTUM = 0.9
 SGD_WEIGHT_DECAY = 1e-3
 
 msg(f"working directory: {os.getcwd()}")
-DATA_PATH = 'data/datasetCIFAR100'
+DATA_PATH = 'data/datasetFood101'
 
 # Setting seeds ###################################################################################
 np.random.seed(RANDOM_SEED)
@@ -78,17 +78,18 @@ torch.manual_seed(RANDOM_SEED)
 torch.cuda.manual_seed(RANDOM_SEED)
 ###################################################################################################
 
-trainval_set = datasets.CIFAR100(
+trainval_set = datasets.Food101(
     root = DATA_PATH,
-    train = True,                         
+    split = "train",                         
     transform = ToTensor(), 
     download = True
     )
 
-test_set = datasets.CIFAR100(
+test_set = datasets.Food101(
     root = DATA_PATH, 
-    train = False, 
-    transform = ToTensor()
+    split = "test", 
+    transform = ToTensor(),
+    download = True
     )
 
 # Creating data indices for training and validation splits:

@@ -8,9 +8,10 @@ print(f"Using {DEVICE} device")
 
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
-save_model_path = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7-3317d999-41d2-4930-bc0e-4cb93bfe5fe5/adversarial_efficientnet_b7_cifar100.pth"
+save_model_path1 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_GBAR1-a3a363dd-75fa-4df8-908f-5d4165a5855c/adversarial_efficientnet_v2_cifar100.pth"
+save_model_path2 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_400_Epochs-e0a6c4a0-c339-42c9-be65-9b2a22219d95/adversarial_efficientnet_v2_cifar100.pth"
 
-checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
+checkpoint = torch.load(save_model_path1, map_location=torch.device(DEVICE))
 accuracies = checkpoint['accuracies']
 losses = checkpoint['losses']
 num_epochs = len(accuracies[0])

@@ -13,7 +13,7 @@ from os.path import exists
 
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
-model_name = "adversarial_efficientnet_v2_cifar100.pth"
+model_name = "adversarial_efficientnet_b7_cifar100.pth"
 #MODEL_PATH = "../trainedModels/" + model_name
 MODEL_PATH = model_name
 
