@@ -263,7 +263,7 @@ model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 #optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay=1e-3)#optim.SGD(model.parameters(), lr= lr)
 optimizer = torch.optim.SGD(model.parameters(), lr=lr, 
                             momentum=0.9, weight_decay=1e-3)
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min')
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min',factor = 1/20, patience = 5)
 
 print(f"hyperparameters are:")
 msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
