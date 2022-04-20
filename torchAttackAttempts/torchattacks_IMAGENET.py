@@ -252,33 +252,33 @@ if Plot == True:
 
 def saliencyMapSingleImage(model, data):
 
-data.requires_grad_()
+    data.requires_grad_()
 
-# we would run the model in evaluation mode
-model.eval()
-# Zero all existing gradients
-model.zero_grad()
-# Set requires_grad attribute of tensor. Important for Attack
-data.requires_grad = True
+    # we would run the model in evaluation mode
+    model.eval()
+    # Zero all existing gradients
+    model.zero_grad()
+    # Set requires_grad attribute of tensor. Important for Attack
+    data.requires_grad = True
 
-# Get the index corresponding to the maximum score and the maximum score itself.
-scores = model(data)
+    # Get the index corresponding to the maximum score and the maximum score itself.
+    scores = model(data)
 
-# Get the index corresponding to the maximum score and the maximum score itself.
-score_max_index = scores.argmax()
-score_max = scores[0,score_max_index]
+    # Get the index corresponding to the maximum score and the maximum score itself.
+    score_max_index = scores.argmax()
+    score_max = scores[0,score_max_index]
 
-# backward function on score_max performs the backward pass in the computation
-# graph and calculates the gradient of score_max with respect to nodes in the
-# computation graph
-score_max.backward()
+    # backward function on score_max performs the backward pass in the computation
+    # graph and calculates the gradient of score_max with respect to nodes in the
+    # computation graph
+    score_max.backward()
 
-# Saliency would be the gradient with respect to the input image now. But note
-# that the input image has 3 channels, R, G and B. To derive a single class
-# saliency value for each pixel (i, j),  we take the maximum magnitude
-# across all colour channels.
-saliency_mean_abs = torch.mean(data.grad.data.abs(), dim=1) #torch.max(X.grad.data.abs(),dim=1)
-saliency_max_abs, _ = torch.max(data.grad.data.abs(), dim=1)
+    # Saliency would be the gradient with respect to the input image now. But note
+    # that the input image has 3 channels, R, G and B. To derive a single class
+    # saliency value for each pixel (i, j),  we take the maximum magnitude
+    # across all colour channels.
+    saliency_mean_abs = torch.mean(data.grad.data.abs(), dim=1) #torch.max(X.grad.data.abs(),dim=1)
+    saliency_max_abs, _ = torch.max(data.grad.data.abs(), dim=1)
 
-return saliency_max_abs, saliency_mean_abs
+    return saliency_max_abs, saliency_mean_abs
 
