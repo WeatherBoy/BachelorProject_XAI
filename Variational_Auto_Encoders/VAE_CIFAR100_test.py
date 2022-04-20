@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[2]:
+# In[11]:
 
 
 import torch
@@ -45,7 +45,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[3]:
+# In[12]:
 
 
 def msg(
@@ -77,7 +77,7 @@ def msg(
 
 # ## Downloading data
 
-# In[4]:
+# In[13]:
 
 
 BATCH_SIZE = 32 #128
@@ -137,7 +137,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[5]:
+# In[14]:
 
 
 cfg = {
@@ -245,13 +245,13 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[8]:
+# In[26]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 10 # hyperparameter
-lr = 1e-5
+lr = 1e-4
 numEpochs = 300
 modeltype = 'VGG11'
 
@@ -263,7 +263,7 @@ model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 #optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay=1e-3)#optim.SGD(model.parameters(), lr= lr)
 optimizer = torch.optim.SGD(model.parameters(), lr=lr, 
                             momentum=0.9, weight_decay=1e-3)
-scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=lr, max_lr=0.0005)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min')
 
 print(f"hyperparameters are:")
 msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
@@ -528,7 +528,19 @@ else:
 
 # # Plot reproduction 
 
-# In[13]:
+# In[21]:
+
+
+checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
+model.load_state_dict(checkpoint['model_state_dict'])
+
+
+# In[24]:
+
+
+
+# Set the model in evaluation mode. In this case this is for the Dropout layers
+model.eval()
 
 
 import matplotlib.pyplot as plt
@@ -545,7 +557,7 @@ def batchplot(batch_show,image):
             #plt.show()
 
     # Model reconstruction
-    x_hat, mean, var = model(image)
+    x_hat, _, _ = model(image)
 
     fig1=plt.figure(figsize=(17,4))
     fig1.patch.set_facecolor('white')
@@ -559,7 +571,6 @@ def batchplot(batch_show,image):
         if i == 0:
             plt.ylabel('Original image')
         
-
         plt.subplot(2,batch_show,batch_show+ i+1)
         imshow(x_hat[i].detach())
         plt.xticks([],[])
@@ -571,10 +582,11 @@ def batchplot(batch_show,image):
 
 dataiter = iter(test_loader)
 x, labels = dataiter.next()
-x_hat, mean, var = model(x)
 
+x_hat, mean, var = model(x)
 
 
 batch_show = 7
 
 #batchplot(batch_show,x)
+
