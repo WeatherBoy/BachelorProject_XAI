@@ -24,7 +24,7 @@ import requests
 import os
 from PIL import Image
 from torch.autograd import Variable
-get_ipython().run_line_magic('matplotlib', 'inline')
+
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -281,3 +281,4 @@ saliency_mean_abs = torch.mean(data.grad.data.abs(), dim=1) #torch.max(X.grad.da
 saliency_max_abs, _ = torch.max(data.grad.data.abs(), dim=1)
 
 return saliency_max_abs, saliency_mean_abs
+
