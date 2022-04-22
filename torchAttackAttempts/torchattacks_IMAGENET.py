@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[58]:
+# In[82]:
 
 
 import torch
@@ -31,7 +31,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
 # Path to saving the attack
-save_akt_path = "../plottables/AttacksVGG.pth"
+save_akt_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
 
 train_again = True
 
@@ -40,7 +40,7 @@ train_again = True
 # 
 # Downloading photo from internet!
 
-# In[59]:
+# In[83]:
 
 
 def download(url,fname):
@@ -77,7 +77,7 @@ labels = requests.get(labels_link).json()
 
 # Pre- and deprocessing of the image
 
-# In[60]:
+# In[84]:
 
 
 def preprocess(image, size=224):
@@ -102,7 +102,7 @@ def deprocess(image):
 # 
 # The model obviously also needs to be defined:
 
-# In[61]:
+# In[85]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -116,7 +116,7 @@ print()
 
 # Plot image
 
-# In[62]:
+# In[86]:
 
 
 data = preprocess(img)
@@ -139,7 +139,7 @@ plt.imshow(np.asarray(img))
 
 # # different attacks on the model
 
-# In[63]:
+# In[87]:
 
 
 atks = [
@@ -214,7 +214,7 @@ def saliencyMapSingleImage(model, data):
 
 # Begin attacking!
 
-# In[64]:
+# In[88]:
 
 
 if train_again == True:
@@ -236,16 +236,23 @@ if train_again == True:
     torch.save({"adv_images" : adv_images, "pred_images" : pred_images, "saliencyMap" : saliency_im}, save_akt_path)
 
 
+# In[92]:
+
+
+
+
+
 # ## Plotting 
 
-# In[ ]:
+# In[90]:
 
 
 # Loading!
 attack = torch.load(save_akt_path,map_location = torch.device(DEVICE))
 adv_images = attack["adv_images"]
 pred_images = attack["pred_images"]
-saliency_im = attack["saliencyMap"]
+#saliency_im = attack["saliencyMap"]
+saliency_im,_ = saliencyMapSingleImage(model, img_variable)
 
 saliency_show = np.transpose(saliency_im,(1,2,0))
 
