@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[1]:
+# In[58]:
 
 
 import torch
@@ -31,14 +31,16 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
 # Path to saving the attack
-save_loss_path = "../plottables/AttacksVGG.pth"
+save_akt_path = "../plottables/AttacksVGG.pth"
+
+train_again = True
 
 
 # ## Downloading data
 # 
 # Downloading photo from internet!
 
-# In[2]:
+# In[59]:
 
 
 def download(url,fname):
@@ -67,14 +69,15 @@ download(
 img = Image.open(imagePath) 
 
 # defining labels for imagenet
-labels_link = "https://savan77.github.io/blog/labels.json"    
-labels_json = requests.get(labels_link).json()
-labels = {int(idx):label for idx, label in labels_json.items()}
+labels_link = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"    
+labels = requests.get(labels_link).json()
+
+#labels = {int(idx):label for idx, label in labels_json}
 
 
 # Pre- and deprocessing of the image
 
-# In[3]:
+# In[60]:
 
 
 def preprocess(image, size=224):
@@ -99,7 +102,7 @@ def deprocess(image):
 # 
 # The model obviously also needs to be defined:
 
-# In[4]:
+# In[61]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -108,11 +111,12 @@ for param in model.parameters():
     param.requires_grad = False
 
 model.eval()
+print()
 
 
 # Plot image
 
-# In[5]:
+# In[62]:
 
 
 data = preprocess(img)
@@ -135,7 +139,7 @@ plt.imshow(np.asarray(img))
 
 # # different attacks on the model
 
-# In[92]:
+# In[63]:
 
 
 atks = [
@@ -154,14 +158,15 @@ atks = [
     APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='ce'),
     APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='dlr'),
     APGDT(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1),
-    #FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=False),
-    #FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=True),
+    FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=False),
+    FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=True),
     Square(model, eps=8/255, n_queries=5000, n_restarts=1, loss='ce'),
     AutoAttack(model, eps=8/255, n_classes=10, version='standard'),
-    #OnePixel(model, pixels=5, inf_batch=50),
-    #DeepFool(model, steps=100),
+    OnePixel(model, pixels=5, inf_batch=50),
+    DeepFool(model, steps=100),
     DIFGSM(model, eps=8/255, alpha=2/255, steps=100, diversity_prob=0.5, resize_rate=0.9)
 ]
+
 
 
 def advAtkSingleImage(image,label, atk):
@@ -173,112 +178,109 @@ def advAtkSingleImage(image,label, atk):
     # Probability 
     x_pred_prob_adv = F.softmax(output_adv, dim=1).max()*100
 
-    # Determind noise
-    noise = img_variable - adv_image 
-
+    # Determind noise: avd = img + noise => noise = avd - img
+    noise = adv_image - img_variable
+    
     # Save info in lists
     adv_dir =  [adv_image, noise] #['a','b']#[adv_image, noise]
     pred_dir = [label_idx_adv,x_pred_prob_adv] #{"label":label_idx_adv,"prob": x_pred_prob_adv}
     
     return adv_dir, pred_dir
 
-
-# Begin attacking!
-
-# In[87]:
-
-
-# Initialization
-adv_images = []
-pred_images = []
-
-for atk in atks:
-    print("_"*70)
-    print(atk)
-    
-    adv_im, adv_pred = advAtkSingleImage(img_variable, label_idx, atk)
-    adv_images.append(adv_im)
-    pred_images.append(adv_pred)
-
-torch.save({"adv_images" : adv_images, "pred_images" : pred_images}, save_loss_path)
-
-
-# ## Plotting 
-
-# In[91]:
-
-
-# want plot?
-Plot = False
-
-if Plot == True:
-    cnt = 0
-
-    fig1 = plt.figure(figsize=(8,10))
-    fig1.patch.set_facecolor('white')
-    for i in range(len(adv_images[0])):
-        for j in range(len(atks)):
-            cnt += 1
-
-            plt.subplot(len(adv_images[0]),len(atks),cnt)
-            plt.xticks([], [])
-            plt.yticks([], [])
-            # if j == 0:
-            #     plt.ylabel("Eps: {}".format(round(epsilons[i].item(), 3)), fontsize=14)
-            ex  = deprocess(adv_images[i][j])
-            #print(ex)
-            # CIFAR is complicated so we need to reshape and normalize..
-            #reshaped_ex = np.transpose(ex, (1, 2, 0))
-            #print(f"min: {min(reshaped_ex.flatten())}")
-            #normalised_ex = reshaped_ex / 2     # unnormalize
-            #print(f"max: {max(reshaped_ex.flatten())}")
-            if j == 0:
-                plt.title(f"{labels[pred_images[i][0].item()]}\nProb: {pred_images[0][1].item():.1f}")
-            #plt.title("{} \n prob{}".format(labels[pred_images[i][j]], classes[adv]))
-            plt.imshow(ex)
-    plt.tight_layout()
-    plt.show()
-
-
-# ## For a random Image perform attack
-# A function for performing the FGSM (Fast Gradient Sign Method) attack and creating a saliency map of the original image.
-# 
-# My solution to this was doing both the saliency map and the adversarial attack, each on their own, instead of serialising it, seeing as how they use a lot of the same functions.
-# This was with the intend of not showing unnecessary correlation, but I might have been overthinking it.
-
-# In[ ]:
-
-
-
 def saliencyMapSingleImage(model, data):
-
-    data.requires_grad_()
-
-    # we would run the model in evaluation mode
-    model.eval()
-    # Zero all existing gradients
+    
+    # Zero all existing gradient
     model.zero_grad()
     # Set requires_grad attribute of tensor. Important for Attack
+    data.requires_grad_()
     data.requires_grad = True
-
+    
     # Get the index corresponding to the maximum score and the maximum score itself.
     scores = model(data)
-
+    
     # Get the index corresponding to the maximum score and the maximum score itself.
     score_max_index = scores.argmax()
     score_max = scores[0,score_max_index]
-
-    # backward function on score_max performs the backward pass in the computation
-    # graph and calculates the gradient of score_max with respect to nodes in the
-    # computation graph
+   
+    # Compute gradient of score_max with respect to the model
     score_max.backward()
-
-    # Saliency would be the gradient with respect to the input image now. But note
-    # that the input image has 3 channels, R, G and B. To derive a single class
-    # saliency value for each pixel (i, j),  we take the maximum magnitude
-    # across all colour channels.
+    
+    # flatten to one channel
     saliency_mean_abs = torch.mean(data.grad.data.abs(), dim=1) #torch.max(X.grad.data.abs(),dim=1)
     saliency_max_abs, _ = torch.max(data.grad.data.abs(), dim=1)
 
     return saliency_max_abs, saliency_mean_abs
+
+
+# Begin attacking!
+
+# In[64]:
+
+
+if train_again == True:
+    # Initialization
+    adv_images = []
+    pred_images = []
+
+    for atk in atks:
+        print("_"*70)
+        print(atk)
+        
+        adv_im, adv_pred = advAtkSingleImage(img_variable, label_idx, atk)
+        adv_images.append(adv_im)
+        pred_images.append(adv_pred)
+
+    # Compute Saliency map
+    saliency_im,_ = saliencyMapSingleImage(model, img_variable)
+
+    torch.save({"adv_images" : adv_images, "pred_images" : pred_images, "saliencyMap" : saliency_im}, save_akt_path)
+
+
+# ## Plotting 
+
+# In[ ]:
+
+
+# Loading!
+attack = torch.load(save_akt_path,map_location = torch.device(DEVICE))
+adv_images = attack["adv_images"]
+pred_images = attack["pred_images"]
+saliency_im = attack["saliencyMap"]
+
+saliency_show = np.transpose(saliency_im,(1,2,0))
+
+if train_again == False:
+    cnt = 0
+
+    fig1 = plt.figure(figsize=(7,70))
+    fig1.patch.set_facecolor('white')
+
+    for i in range(len(atks)):
+        for j in range(len(adv_images[0])+1):
+            cnt += 1
+
+            plt.subplot(len(atks),len(adv_images[0]) + 1,cnt)
+            plt.xticks([], [])
+            plt.yticks([], [])
+      
+            
+           
+            if j == 0: # For adversarial example
+                ex  = deprocess(adv_images[i][j])
+                plt.title(f"{labels[pred_images[i][0].item()]}\nProb: {pred_images[i][1].item():.1f}")#title(pred_images[i][1].item())#
+                plt.imshow(ex)
+            elif j == 1: # For the noise 
+                ex = torch.max(adv_images[i][j].abs(), dim=1)
+                ex = np.transpose(ex[0].detach(), (1,2,0))
+                plt.title(atks[i].__class__.__name__)
+                plt.imshow(ex,cmap= 'gray')
+
+            else: # Saliency map!
+                plt.title('Saliency of original image')
+                plt.imshow(saliency_show, cmap = 'gray')
+
+
+            
+    #plt.tight_layout()
+    plt.show()
 
