@@ -51,15 +51,15 @@ def msg(
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
       
-EPOCHS = 30
+EPOCHS = 50
 BATCH_SIZE = 128
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 NUM_WORKERS = 1
-LR = 3e-2
-MIN_LR = 1e-5
+LR = 1e-3
+MIN_LR = 1e-6
 SGD_MOMENTUM = 0.9
-SGD_WEIGHT_DECAY = 1e-5
+SGD_WEIGHT_DECAY = 1e-7
 
 # This message is probably quite uneccessary, but it is always just nice
 # knowing where we are!

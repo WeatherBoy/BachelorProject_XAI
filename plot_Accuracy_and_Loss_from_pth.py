@@ -9,17 +9,19 @@ print(f"Using {DEVICE} device")
 
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
-save_model_path1 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/EfficientNet_b7_SecondAttempt_warm_restart_plot.pth"
-save_model_path2 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_150_Epochs-bed3c342-b686-4603-90b9-e4c93ff1d02a/adversarial_efficientnet_b7_cifar100.pth"
+good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
+save_model_path1 = good_dir + "Transfer_Learning_EffNet_b7" + ".pth"
+save_model_path2 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_plot" + ".pth"
 
-checkpoint = torch.load(save_model_path2, map_location=torch.device(DEVICE))
-accuracies = checkpoint['accuracies']
-losses = checkpoint['losses']
+checkpoint = torch.load(save_model_path1, map_location=torch.device(DEVICE))
+accuracies = checkpoint['accuracy']
+losses = checkpoint['loss']
+print(f"max accuracy (test): {max(accuracies[0])} \nmin loss (test): {min(losses[0])}")
 num_epochs = len(accuracies[0])
 
 xVals = list(range(1, num_epochs + 1))
-print("Test accuracies:", accuracies[0])
-print("Train accuracies:", accuracies[1])
+#print("Test accuracies:", accuracies[0])
+#print("Train accuracies:", accuracies[1])
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
 fig.suptitle(f"Accuracy and loss over {num_epochs} epochs")
