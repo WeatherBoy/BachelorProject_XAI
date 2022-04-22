@@ -59,7 +59,7 @@ eps_step_size = epsilons[1].item()
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
-EPOCHS = 400
+EPOCHS = 150
 BATCH_SIZE = 128
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
@@ -67,7 +67,6 @@ NUM_WORKERS = 1
 LR = 3e-2
 MIN_LR = 1e-5
 SGD_MOMENTUM = 0.9
-SGD_WEIGHT_DECAY = 1e-3
 
 msg(f"working directory: {os.getcwd()}")
 DATA_PATH = 'data/datasetCIFAR100'
@@ -145,7 +144,7 @@ loss_fn = nn.CrossEntropyLoss()
 
 # Using the same parameters as Manxi here
 optimizer = torch.optim.SGD(model.parameters(), lr=LR, 
-                            momentum=SGD_MOMENTUM, weight_decay=SGD_WEIGHT_DECAY)
+                            momentum=SGD_MOMENTUM)
 
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer,
                                 T_max = EPOCHS, eta_min = MIN_LR, verbose=True)
@@ -252,6 +251,8 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
+        
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
         optimizer.step()
         
         current_batch_size = len(inputs)
@@ -261,7 +262,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
             print(f"Train loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     
     train_loss /= num_batches
-    scheduler.step()        
+    scheduler.step()      
     correct /= size
     return 100*correct, train_loss
 
