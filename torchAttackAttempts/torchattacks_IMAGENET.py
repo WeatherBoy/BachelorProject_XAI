@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[157]:
+# In[197]:
 
 
 import torch
@@ -25,22 +25,24 @@ import os
 from PIL import Image
 from torch.autograd import Variable
 
+train_again = True
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
 # Path to saving the attack
-save_akt_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
-
-train_again = True
+if train_again == True:
+    save_akt_path = "../plotables/AttacksVGG.pth"
+else:
+    save_akt_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
 
 
 # ## Downloading data
 # 
 # Downloading photo from internet!
 
-# In[158]:
+# In[198]:
 
 
 def download(url,fname):
@@ -77,7 +79,7 @@ labels = requests.get(labels_link).json()
 
 # Pre- and deprocessing of the image
 
-# In[159]:
+# In[199]:
 
 
 def preprocess(image, size=224):
@@ -102,7 +104,7 @@ def deprocess(image):
 # 
 # The model obviously also needs to be defined:
 
-# In[160]:
+# In[200]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -116,7 +118,7 @@ print()
 
 # Plot image
 
-# In[161]:
+# In[201]:
 
 
 data = preprocess(img)
@@ -139,7 +141,7 @@ plt.imshow(np.asarray(img))
 
 # # different attacks on the model
 
-# In[162]:
+# In[202]:
 
 
 atks = [
@@ -214,7 +216,7 @@ def saliencyMapSingleImage(model, data):
 
 # Begin attacking!
 
-# In[163]:
+# In[203]:
 
 
 if train_again == True:
@@ -237,9 +239,7 @@ if train_again == True:
 
 
 
-# ## Plotting 
-
-# In[164]:
+# In[205]:
 
 
 
@@ -285,4 +285,25 @@ if train_again == False:
             
     #plt.tight_layout()
     plt.show()
+
+
+
+
+if train_again == False:
+    # histogram of saliency
+    ex = (saliency_show - saliency_show.min())/(saliency_show.max() -saliency_show.min())#adv_images[3][1][0].detach()
+
+    x_range = [0.15, 1]
+    histogram, bin_edges = np.histogram(ex, bins=100, range=(x_range[0], x_range[1]))
+
+
+    plt.figure()
+    plt.title("Grayscale Histogram")
+    plt.xlabel("grayscale value")
+    plt.ylabel("pixel count")
+    plt.xlim(x_range)  # <- named arguments do not work here
+
+    plt.plot(bin_edges[0:-1], histogram)  # <- or here
+    plt.show()
+
 
