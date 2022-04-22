@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torchvision import datasets, utils, models
 from torch.utils.data import DataLoader, random_split
-from torchvision.transforms import ToTensor
+from torchvision.transforms import ToTensor, Compose, Resize
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,6 +16,7 @@ from os.path import exists
 model_name = "adversarial_efficientnet_by_Food101.pth"
 #MODEL_PATH = "../trainedModels/" + model_name
 MODEL_PATH = model_name
+PLOT_PATH = "plot.pth"
 
 ## Important if you want to train again, set this to True
 try_resume_train = True
@@ -81,14 +82,14 @@ torch.cuda.manual_seed(RANDOM_SEED)
 trainval_set = datasets.Food101(
     root = DATA_PATH,
     split = "train",                         
-    transform = ToTensor(), 
+    transform = Compose([ToTensor(), Resize([512, 512])]), 
     download = True
     )
 
 test_set = datasets.Food101(
     root = DATA_PATH, 
     split = "test", 
-    transform = ToTensor(),
+    transform = Compose([ToTensor(), Resize([512, 512])]),
     download = True
     )
 
@@ -262,7 +263,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
             print(f"Train loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     
     train_loss /= num_batches
-    scheduler.step(train_loss)        
+    scheduler.step()        
     correct /= size
     return 100*correct, train_loss
 
@@ -298,34 +299,29 @@ if not trained_model_exists or try_resume_train or startEpoch < (EPOCHS - 1):
     best_epoch = 0
     
     msg("Will now begin training!")
-    for t in range(startEpoch, EPOCHS):
-        print(f"Epoch {t+1}\n-------------------------------")
+    for epoch in range(startEpoch, EPOCHS):
+        print(f"Epoch {epoch + 1}\n-------------------------------")
         accuracyTrain, avglossTrain = train_loop(train_loader, model, loss_fn, optimizer)
         accuracyTest, avglossTest = test_loop(val_loader, model, loss_fn)
         
         # This is just extra for plotting
-        accuracies[0,t], accuracies[1,t] = accuracyTest, accuracyTrain
-        losses[0,t], losses[1,t] = avglossTest, avglossTrain
+        accuracies[0,epoch], accuracies[1,epoch] = accuracyTest, accuracyTrain
+        losses[0,epoch], losses[1,epoch] = avglossTest, avglossTrain
         
         if avglossTest < best_loss:
             # We only save a checkpoint if our model is performing better
             torch.save({
-                'epoch': t,
+                'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'accuracies': accuracies,
-                'losses': losses
                 }, MODEL_PATH)
             best_loss = avglossTest
-            best_epoch = t
-            msg(f"New best loss is: {avglossTest} \nCheckpoint at epoch: {t + 1}")
+            best_epoch = epoch
+            msg(f"New best loss is: {avglossTest} \nCheckpoint at epoch: {epoch + 1}")
         else:
-            # We always save accuracies and losses
-            checkpoint = torch.load(MODEL_PATH)
-            checkpoint['accuracies'] = accuracies
-            checkpoint['losses'] = losses
-            torch.save(checkpoint, MODEL_PATH)
             msg("Only accuracies and losses were updated")
+        
+        torch.save({"accuracy" : accuracies, "loss" : losses}, PLOT_PATH)
             
     msg(f"Done! Final model was saved to: \n'{MODEL_PATH}'")
     

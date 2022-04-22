@@ -1,1 +1,1 @@
-C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7-3317d999-41d2-4930-bc0e-4cb93bfe5fe5/adversarial_efficientnet_b7_cifar100.pth
+C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_150_Epochs-bed3c342-b686-4603-90b9-e4c93ff1d02a/adversarial_efficientnet_b7_cifar100.pth

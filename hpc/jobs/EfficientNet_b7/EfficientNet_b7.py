@@ -261,7 +261,7 @@ def train_loop(dataloader, model, loss_fn, optimizer):
             print(f"Train loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     
     train_loss /= num_batches
-    scheduler.step(train_loss)        
+    scheduler.step()        
     correct /= size
     return 100*correct, train_loss
 
