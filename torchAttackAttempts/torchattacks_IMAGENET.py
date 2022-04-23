@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[197]:
+# In[3]:
 
 
 import torch
@@ -36,13 +36,14 @@ if train_again == True:
     save_akt_path = "../plotables/AttacksVGG.pth"
 else:
     save_akt_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
+print(f"saving model in path:{save_akt_path}")
 
 
 # ## Downloading data
 # 
 # Downloading photo from internet!
 
-# In[198]:
+# In[4]:
 
 
 def download(url,fname):
@@ -79,7 +80,7 @@ labels = requests.get(labels_link).json()
 
 # Pre- and deprocessing of the image
 
-# In[199]:
+# In[7]:
 
 
 def preprocess(image, size=224):
@@ -104,7 +105,7 @@ def deprocess(image):
 # 
 # The model obviously also needs to be defined:
 
-# In[200]:
+# In[8]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -118,7 +119,7 @@ print()
 
 # Plot image
 
-# In[201]:
+# In[9]:
 
 
 data = preprocess(img)
@@ -138,10 +139,12 @@ plt.axis('off')
 plt.title(f"{x_pred}\nprob: {x_pred_prob:.1f}")
 plt.imshow(np.asarray(img))
 
+print(f"pixel values: min {img_variable.min().item()}\tmax {img_variable.max().item()}")
+
 
 # # different attacks on the model
 
-# In[202]:
+# In[22]:
 
 
 atks = [
@@ -195,7 +198,6 @@ def saliencyMapSingleImage(model, data):
     model.zero_grad()
     # Set requires_grad attribute of tensor. Important for Attack
     data.requires_grad_()
-    data.requires_grad = True
     
     # Get the index corresponding to the maximum score and the maximum score itself.
     scores = model(data)
@@ -208,15 +210,15 @@ def saliencyMapSingleImage(model, data):
     score_max.backward()
     
     # flatten to one channel
-    saliency_mean_abs = torch.mean(data.grad.data.abs(), dim=1) #torch.max(X.grad.data.abs(),dim=1)
-    saliency_max_abs, _ = torch.max(data.grad.data.abs(), dim=1)
+    saliency_mean_abs = torch.mean(data.grad.abs(), dim=1) #torch.max(X.grad.data.abs(),dim=1)
+    saliency_max_abs, _ = torch.max(data.grad.abs(), dim=1)
 
     return saliency_max_abs, saliency_mean_abs
 
 
 # Begin attacking!
 
-# In[203]:
+# In[235]:
 
 
 if train_again == True:
@@ -233,13 +235,15 @@ if train_again == True:
         pred_images.append(adv_pred)
 
     # Compute Saliency map
+    print("_"*70)
+    print("\nsaliency map")
     saliency_im,_ = saliencyMapSingleImage(model, img_variable)
 
     torch.save({"adv_images" : adv_images, "pred_images" : pred_images, "saliencyMap" : saliency_im}, save_akt_path)
 
 
 
-# In[205]:
+# In[237]:
 
 
 
@@ -305,5 +309,26 @@ if train_again == False:
 
     plt.plot(bin_edges[0:-1], histogram)  # <- or here
     plt.show()
+
+
+
+# ## Plot historgam of noise
+
+# In[ ]:
+
+
+if train_again == False:
+    # noise [i][1]
+    noise_test = adv_images[0][1][0]
+    # img [i][0]
+    adv_test = adv_images[0][0][0]
+
+    print(noise_test.size(),adv_test.size(),img_variable[0].size())
+    
+    img_noise = img_variable[0] + noise_test
+
+    test0 = img_noise - adv_test
+    print(test0.min(),test0.max())
+    
 
 
