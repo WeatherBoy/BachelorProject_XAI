@@ -10,12 +10,18 @@ print(f"Using {DEVICE} device")
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
 good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
-save_model_path1 = good_dir + "Transfer_Learning_EffNet_b7" + ".pth"
-save_model_path2 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_plot" + ".pth"
+save_model_path1 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6" + ".pth"
+save_model_path2 = good_dir + "Transfer_Learning_EffNet_b7_weight_decay_1e6_bigToSmallLR_100_EPOCHS" + ".pth"
 
 checkpoint = torch.load(save_model_path1, map_location=torch.device(DEVICE))
-accuracies = checkpoint['accuracy']
-losses = checkpoint['loss']
+
+try:
+    accuracies = checkpoint['accuracy']
+    losses = checkpoint['loss']
+except KeyError:
+    accuracies = checkpoint['accuracies']
+    losses = checkpoint['losses']    
+
 print(f"max accuracy (test): {max(accuracies[0])} \nmin loss (test): {min(losses[0])}")
 num_epochs = len(accuracies[0])
 
