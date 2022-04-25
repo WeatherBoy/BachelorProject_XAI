@@ -10,14 +10,13 @@
 # 
 # And also defining where to put the model weights
 
-# In[3]:
+# In[1]:
 
 
 import torch
 import torch.nn.functional as F
 from torchattacks import *
-from torch import nn, optim
-from torchvision import datasets, transforms, utils, models
+from torchvision import transforms, models
 import numpy as np
 import matplotlib.pyplot as plt
 import requests
@@ -36,14 +35,14 @@ if train_again == True:
     save_akt_path = "../plotables/AttacksVGG.pth"
 else:
     save_akt_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
-print(f"saving model in path:{save_akt_path}")
+print(f"Saving model in path:{save_akt_path}")
 
 
 # ## Downloading data
 # 
 # Downloading photo from internet!
 
-# In[4]:
+# In[2]:
 
 
 def download(url,fname):
@@ -80,7 +79,7 @@ labels = requests.get(labels_link).json()
 
 # Pre- and deprocessing of the image
 
-# In[7]:
+# In[3]:
 
 
 def preprocess(image, size=224):
@@ -105,7 +104,7 @@ def deprocess(image):
 # 
 # The model obviously also needs to be defined:
 
-# In[8]:
+# In[4]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -119,7 +118,7 @@ print()
 
 # Plot image
 
-# In[9]:
+# In[14]:
 
 
 data = preprocess(img)
@@ -144,7 +143,7 @@ print(f"pixel values: min {img_variable.min().item()}\tmax {img_variable.max().i
 
 # # different attacks on the model
 
-# In[22]:
+# In[6]:
 
 
 atks = [
@@ -175,12 +174,12 @@ atks = [
 
 
 def advAtkSingleImage(image,label, atk):
-
+    # Attack
     adv_image = atk(image, label)
     output_adv = model(adv_image)
+    
+    # Label and Probability 
     label_idx_adv = torch.argmax(output_adv).unsqueeze(0)
-
-    # Probability 
     x_pred_prob_adv = F.softmax(output_adv, dim=1).max()*100
 
     # Determind noise: avd = img + noise => noise = avd - img
@@ -218,13 +217,14 @@ def saliencyMapSingleImage(model, data):
 
 # Begin attacking!
 
-# In[235]:
+# In[7]:
 
 
 if train_again == True:
     # Initialization
     adv_images = []
     pred_images = []
+    adv_name = []
 
     for atk in atks:
         print("_"*70)
@@ -233,17 +233,19 @@ if train_again == True:
         adv_im, adv_pred = advAtkSingleImage(img_variable, label_idx, atk)
         adv_images.append(adv_im)
         pred_images.append(adv_pred)
+        adv_name.append(atk.__class__.__name__)
 
     # Compute Saliency map
     print("_"*70)
     print("\nsaliency map")
     saliency_im,_ = saliencyMapSingleImage(model, img_variable)
 
-    torch.save({"adv_images" : adv_images, "pred_images" : pred_images, "saliencyMap" : saliency_im}, save_akt_path)
+    torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, save_akt_path)
 
 
+# ## Plotting 
 
-# In[237]:
+# In[9]:
 
 
 
@@ -252,6 +254,7 @@ if train_again == False:
     attack = torch.load(save_akt_path,map_location = torch.device(DEVICE))
     adv_images = attack["adv_images"]
     pred_images = attack["pred_images"]
+    adv_name = attack["adv_names"]
     #saliency_im = attack["saliencyMap"]
     saliency_im,_ = saliencyMapSingleImage(model, img_variable)
 
@@ -278,7 +281,7 @@ if train_again == False:
             elif j == 1: # For the noise 
                 ex = torch.max(adv_images[i][j].abs(), dim=1)
                 ex = np.transpose(ex[0].detach(), (1,2,0))
-                plt.title(atks[i].__class__.__name__)
+                plt.title(adv_name[i].__class__.__name__)
                 plt.imshow(ex,cmap= 'gray')
 
             else: # Saliency map!
@@ -291,6 +294,15 @@ if train_again == False:
     plt.show()
 
 
+# In[13]:
+
+
+print(len(adv_images),len(atks))
+
+
+# ## Plot histogram of saliency map
+
+# In[ ]:
 
 
 if train_again == False:
@@ -314,21 +326,26 @@ if train_again == False:
 
 # ## Plot historgam of noise
 
-# In[ ]:
+# In[24]:
 
 
 if train_again == False:
-    # noise [i][1]
-    noise_test = adv_images[0][1][0]
-    # img [i][0]
-    adv_test = adv_images[0][0][0]
+    deviation = []
+    for i in range(18):
+        # noise [i][1]
+        noise_test = adv_images[i][1][0]
+        # img [i][0]
+        adv_test = adv_images[i][0][0]
 
-    print(noise_test.size(),adv_test.size(),img_variable[0].size())
+        #print(noise_test.size(),adv_test.size(),img_variable[0].size())
+        
+        img_noise = img_variable[0] + noise_test
+
+        test0 = img_noise - adv_test
+        deviation.append([test0.min(),test0.max()])
+        print(test0.min().item(),test0.max().item())
     
-    img_noise = img_variable[0] + noise_test
-
-    test0 = img_noise - adv_test
-    print(test0.min(),test0.max())
+    #print(deviation)
     
 
 
