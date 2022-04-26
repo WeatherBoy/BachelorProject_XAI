@@ -10,10 +10,13 @@ print(f"Using {DEVICE} device")
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
 good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
-save_model_path1 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6" + ".pth"
-save_model_path2 = good_dir + "Transfer_Learning_EffNet_b7_weight_decay_1e6_bigToSmallLR_100_EPOCHS" + ".pth"
+save_model_path1 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_plot" + ".pth"
+save_model_path2 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6" + ".pth"
+save_model_path3 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/main_cls_but_altered_by_Felix-956fe06e-3fbb-433b-8688-1e7ddd1bb681/adversarial_ResNet18_cifar100.pth"
+save_model_path4 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_150_Epochs_weight_decay_1e5-93aa7695-4b38-48a1-8fc0-03cb5ae86187/adversarial_efficientnet_b7_cifar100.pth"
 
-checkpoint = torch.load(save_model_path1, map_location=torch.device(DEVICE))
+true_path3 = save_model_path3.replace("\\", "/")
+checkpoint = torch.load(save_model_path3, map_location=torch.device(DEVICE))
 
 try:
     accuracies = checkpoint['accuracy']
