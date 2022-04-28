@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[11]:
+# In[2]:
 
 
 import torch
@@ -45,7 +45,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[12]:
+# In[3]:
 
 
 def msg(
@@ -77,7 +77,7 @@ def msg(
 
 # ## Downloading data
 
-# In[13]:
+# In[4]:
 
 
 BATCH_SIZE = 32 #128
@@ -137,7 +137,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[14]:
+# In[5]:
 
 
 cfg = {
@@ -245,14 +245,14 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[26]:
+# In[6]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 10 # hyperparameter
 lr = 1e-4
-numEpochs = 300
+numEpochs = 100
 modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
@@ -398,11 +398,11 @@ else:
 
 
 
-def loss_function(x, x_hat, mean, log_var):
+def loss_function(x, x_hat, mean, log_var, KLD_scale):
     reproduction_loss = nn.MSELoss()(x_hat, x)
     #KLD      = - 0.5 * torch.sum(1+ log_var - mean.pow(2) - log_var.exp())
     KLD = torch.mean( -0.5 * torch.sum(1+ log_var - mean**2 - log_var.exp(),dim=1),dim = 0) # Mean loss for the whole batch
-    KLD *= 0.0025
+    KLD *= KLD_scale
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
     return reproduction_loss, KLD 
@@ -413,7 +413,7 @@ def loss_function(x, x_hat, mean, log_var):
 # In[12]:
 
 
-def train_loop(model, loader, loss_fn, optimizer):
+def train_loop(model, loader, loss_fn, optimizer, epoch_num):
     model.train()
 
     size = len(loader.dataset)
@@ -429,7 +429,8 @@ def train_loop(model, loader, loss_fn, optimizer):
         x_hat, mean, log_var = model(x)
 
         # Compute loss
-        loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var)
+        KLD_scale = torch.exp((x - epoch_num)/4)
+        loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
         loss = loss_repo + loss_KLD
 
         train_avg_repo += loss_repo.item()
@@ -497,7 +498,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     msg("Will now begin training!")
     for epoch in range(startEpoch,numEpochs):
         print(f"Epoch {epoch +1}\n----------------------------------")
-        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer)
+        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, epoch +1)
         val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function)
 
         # Save information for plotting
@@ -526,67 +527,4 @@ else:
     msg("Have already trained this model once!")
 
 
-# # Plot reproduction 
-
-# In[21]:
-
-
-checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
-model.load_state_dict(checkpoint['model_state_dict'])
-
-
-# In[24]:
-
-
-
-# Set the model in evaluation mode. In this case this is for the Dropout layers
-model.eval()
-
-
-import matplotlib.pyplot as plt
-model.eval()
-
-def batchplot(batch_show,image):
-# How many images from the batch will you show?
-
-
-    def imshow(img):
-        #img = img / 2 + 0.5     # unnormalize
-            npimg = img.numpy()
-            plt.imshow(np.transpose(npimg, (1, 2, 0)))
-            #plt.show()
-
-    # Model reconstruction
-    x_hat, _, _ = model(image)
-
-    fig1=plt.figure(figsize=(17,4))
-    fig1.patch.set_facecolor('white')
-    for i in range(batch_show):
-
-        plt.subplot(2,batch_show,i+1)
-        imshow(image[i])
-        plt.xticks([],[])
-        plt.yticks([],[])
-        plt.title(classes[labels[i].item()])
-        if i == 0:
-            plt.ylabel('Original image')
-        
-        plt.subplot(2,batch_show,batch_show+ i+1)
-        imshow(x_hat[i].detach())
-        plt.xticks([],[])
-        plt.yticks([],[])
-        if i == 0:
-            plt.ylabel('Reproduced image')
-    pass
-
-
-dataiter = iter(test_loader)
-x, labels = dataiter.next()
-
-x_hat, mean, var = model(x)
-
-
-batch_show = 7
-
-#batchplot(batch_show,x)
 
