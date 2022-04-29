@@ -4,16 +4,15 @@ import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hpc.jobs.parameter_test_for_torchAttack_pretrained_model.parameter_test_for_torchAttack_pretrained_model import EPSILON_STEP_SIZE, EPSILONS
-
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
-save_model_path2_1 = ""
+good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
+save_model_path = good_dir + "poorly_regularised_efficientNet_b7_cifar100_ADV_EXAMPS" + ".pth"
 
 #%% Getting the data ##############################################################################
-dict_thingy = torch.load(save_model_path2_1, map_location=torch.device(DEVICE))
+dict_thingy = torch.load(save_model_path, map_location=torch.device(DEVICE))
 EPSILONS = dict_thingy["epsilons"]
 EPSILON_STEP_SIZE = EPSILONS[1]
 accuracies = dict_thingy["accuracies"]
@@ -30,9 +29,6 @@ classes = trainval_set.classes # or class_to_idx
 
 #%% Results #######################################################################################
 # We make an **accuracy** vs. **epsilon*** plot and see that there is a clear correlation.
-
-
-
 
 plt.figure(figsize=(5,5))
 plt.plot(EPSILONS, accuracies, "*-")

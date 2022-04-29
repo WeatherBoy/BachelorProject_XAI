@@ -8,16 +8,11 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
-from torch import optim
-from torchvision import datasets, utils, models
+from torchvision import datasets, models
 from torch.utils.data import DataLoader, random_split
 from torchvision.transforms import ToTensor
 
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-from os.path import exists
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -277,20 +272,20 @@ def test(model, device, test_loader, epsilon, someSeed):
 #%% Finally we run the attack #####################################################################
 # This also saves some values, so that we can see how the accuracy falls along with greater epsilon (error) rates.
 
-NUM_EPSILONS = 5
+NUM_EPSILONS = 5    # Not including zero
 EPSILONS = torch.linspace(0, 0.3, NUM_EPSILONS + 1)
 EPSILON_STEP_SIZE = EPSILONS[1].item()
 
-accuracies = np.zeros(NUM_EPSILONS)
-examples = np.zeros(NUM_EPSILONS)
+accuracies = []
+examples = []
 
 SEED = np.random.randint(low=0, high=2**30)        
         
 # Run test for each epsilon
 for indx, eps in enumerate(EPSILONS):
     acc, ex = test(model, DEVICE, test_loader, eps, SEED)
-    accuracies[indx] = acc
-    examples[indx] = ex
+    accuracies.append(acc)
+    examples.append(ex)
 
 torch.save({
     "accuracies" : accuracies,
