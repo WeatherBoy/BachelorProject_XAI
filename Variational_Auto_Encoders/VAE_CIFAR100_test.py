@@ -429,7 +429,7 @@ def train_loop(model, loader, loss_fn, optimizer, epoch_num):
         x_hat, mean, log_var = model(x)
 
         # Compute loss
-        KLD_scale = torch.exp((epoch_num - numEpochs)/4)
+        KLD_scale = np.exp((epoch_num - numEpochs)/4)
         loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
         loss = loss_repo + loss_KLD
 
@@ -525,5 +525,4 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
-
 
