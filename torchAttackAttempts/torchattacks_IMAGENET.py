@@ -10,19 +10,20 @@
 # 
 # And also defining where to put the model weights
 
-# In[58]:
+# In[2]:
 
 
 import torch
 import torch.nn.functional as F
 from torchattacks import *
-from torchvision import transforms, models
+from torchvision import transforms, models, datasets
 import numpy as np
 import matplotlib.pyplot as plt
 import requests
 import os
 from PIL import Image
 from torch.autograd import Variable
+
 
 train_again = False
 
@@ -42,7 +43,7 @@ print(f"Saving model in path:{save_akt_path}")
 # 
 # Downloading photo from internet!
 
-# In[59]:
+# In[3]:
 
 
 def download(url,fname):
@@ -79,7 +80,7 @@ labels = requests.get(labels_link).json()
 
 # Pre- and deprocessing of the image
 
-# In[60]:
+# In[4]:
 
 
 def preprocess(image, size=224):
@@ -100,11 +101,13 @@ def deprocess(image):
     return transform(image)
 
 
+# 
+
 # ## Model under attack
 # 
 # The model obviously also needs to be defined:
 
-# In[61]:
+# In[5]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -118,7 +121,7 @@ print()
 
 # Plot image
 
-# In[62]:
+# In[6]:
 
 
 data = preprocess(img)
@@ -143,7 +146,7 @@ print(f"pixel values: min {img_variable.min().item()}\tmax {img_variable.max().i
 
 # # different attacks on the model
 
-# In[63]:
+# In[7]:
 
 
 atks = [
@@ -217,7 +220,7 @@ def saliencyMapSingleImage(model, data):
 
 # Begin attacking!
 
-# In[64]:
+# In[8]:
 
 
 if train_again == True:
@@ -245,7 +248,7 @@ if train_again == True:
 
 # ## Plotting 
 
-# In[116]:
+# In[9]:
 
 
 
@@ -290,37 +293,91 @@ if train_again == False:
 
             else: # Saliency map!
                 plt.title('Saliency of original image')
-                # standardize 
-                ex = (saliency_show - saliency_show.min())/(saliency_show.max() -saliency_show.min())#adv_images[3][1][0].detach()
 
+                ex,_ = torch.max(saliency_show, dim=0,  keepdim=True)
+                ex = np.transpose(ex.detach(), (1,2,0))
+
+                # standardize 
+                ex = (ex - ex.min())/(ex.max() -ex.min())
+                
                 plt.imshow(saliency_show.max() - saliency_show, cmap = 'gray')
 
 
             
     #plt.tight_layout()
     plt.show()
+    print()
 
 
-# In[118]:
+# ### Plot histogram of noise
 
+# In[62]:
 
 
 if train_again == False:
-    # Loading!
-    attack = torch.load(save_akt_path,map_location = torch.device(DEVICE))
-    adv_images = attack["adv_images"]
-    pred_images = attack["pred_images"]
-    #adv_name = attack["adv_names"]
-    #saliency_im = attack["saliencyMap"]
-    saliency_im,_ = saliencyMapSingleImage(model, img_variable)
+    
+    atk_testidx = [3,5,20,0,1]
 
-    saliency_show = np.transpose(saliency_im,(1,2,0))
+    fig2 = plt.figure(figsize=(15,25))
+    fig2.patch.set_facecolor('white')
+    x_range = [0, 1]
+    y_range = [0,800]
+    count = 0
+
+    
+    for i in atk_testidx:
+        count +=1
+
+        ex,_ = torch.max(adv_images[i][1][0], dim=0,  keepdim=True)
+        ex = np.transpose(ex.detach(), (1,2,0))
+        # standardize 
+        ex = (ex - ex.min())/(ex.max() -ex.min())
+        #print(ex.min(),ex.max())
+    
+        histogram, bin_edges = np.histogram(ex, bins=1000, range=(x_range[0], x_range[1]))
+        plt.subplot(len(atk_testidx), 2,count)
+        plt.title(atks[i].__class__.__name__)
+        plt.xlabel("grayscale value")
+        plt.ylabel("pixel count")
+        plt.xlim(x_range)  # <- named arguments do not work here
+        plt.ylim(y_range)
+
+        plt.plot(bin_edges[0:-1], histogram) 
+
+        
+    ex = (saliency_im - saliency_im.min())/(saliency_im.max() -saliency_im.min())
+
+    histogram, bin_edges = np.histogram(ex, bins=1000, range=(x_range[0], x_range[1]))
+
+    plt.subplot(len(atk_testidx), 2,count +1)
+    plt.title("Saliency maps")
+    plt.xlabel("grayscale value")
+    plt.ylabel("pixel count")
+    plt.xlim(x_range)  # <- named arguments do not work here
+    plt.ylim(y_range)
+    plt.plot(bin_edges[0:-1], histogram)
+
+    plt.show()
+
+
+# ### Binaries interesting noise
+
+# In[63]:
+
+
+if train_again == False:
+    def bin_image(image,threshold):
+        return (image<threshold).int()
+
     cnt = 0
+    count = 0
+    threshold = [0.4,0.4,0.275,1,1] # idx: [3,5,20,0,1]
+    thresholdS = 0.15
 
     fig1 = plt.figure(figsize=(7,70))
     fig1.patch.set_facecolor('white')
 
-    for i in range(len(atks)):
+    for i in atk_testidx:
         for j in range(len(adv_images[0])+1):
             cnt += 1
 
@@ -330,79 +387,49 @@ if train_again == False:
       
             
            
-            if j == 0: # For adversarial example
-                ex  = deprocess(adv_images[i][j])
-                plt.title(f"{labels[pred_images[i][0].item()]}\nProb: {pred_images[i][1].item():.1f}")#title(pred_images[i][1].item())#
-                plt.imshow(ex)
-            elif j == 1: # For the noise 
-                ex = deprocess(adv_images[i][j])
+            if j == 0: # Noise
+                ex,_ = torch.max(adv_images[i][j+1][0], dim=0,  keepdim=True)
+                ex = np.transpose(ex.detach(), (1,2,0))
 
-                plt.title(atks[i].__class__.__name__)
-                plt.imshow(ex)
+                # standardize 
+                ex = (ex - ex.min())/(ex.max() -ex.min())#adv_images[3][1][0].detach()
+            
+                plt.title("Original noise")
+                plt.ylabel(atks[i].__class__.__name__)
+                plt.imshow(ex.max()-ex,cmap= 'gray')
+            elif j == 1: # Bin noise
+                ex,_ = torch.max(adv_images[i][j][0], dim=0,  keepdim=True)
+                ex = np.transpose(ex.detach(), (1,2,0))
+
+                # standardize 
+                ex = (ex - ex.min())/(ex.max() -ex.min())#adv_images[3][1][0].detach()
+                ex_bin = bin_image(ex,threshold[count])
+                plt.title(f"Binary noise {threshold[count]}")
+                plt.imshow(ex_bin,cmap= 'gray')
+
+                count += 1
 
             else: # Saliency map!
-                plt.title('Saliency of original image')
-                # standardize 
-                ex = (saliency_show - saliency_show.min())/(saliency_show.max() -saliency_show.min())#adv_images[3][1][0].detach()
+                plt.title(f'Saliency {thresholdS}')
 
-                plt.imshow(saliency_show.max() - saliency_show, cmap = 'gray')
+                ex,_ = torch.max(saliency_im, dim=0,  keepdim=True)
+                ex = np.transpose(ex.detach(), (1,2,0))
+
+                # standardize 
+                ex = (ex - ex.min())/(ex.max() -ex.min())
+                ex_bin = bin_image(ex,thresholdS)
+                plt.imshow(ex_bin, cmap = 'gray')
 
 
             
     #plt.tight_layout()
     plt.show()
+    print() # make saliency map of attacked image, more examples, more saliency maps? kig på TPDG
 
 
-# ## Plot histogram of saliency map
+# ## Sanity check: noise correctly?
 
-# In[124]:
-
-
-if train_again == False:
-    # histogram of saliency
-    # ex = (saliency_show - saliency_show.min())/(saliency_show.max() -saliency_show.min())#adv_images[3][1][0].detach()
-
-    # x_range = [0.15, 1]
-    # histogram, bin_edges = np.histogram(ex, bins=100, range=(x_range[0], x_range[1]))
-
-
-    # plt.figure()
-    # plt.title("Grayscale Histogram")
-    # plt.xlabel("grayscale value")
-    # plt.ylabel("pixel count")
-    # plt.xlim(x_range)  # <- named arguments do not work here
-    # plt.plot(bin_edges[0:-1], histogram)  # <- or here
-    # plt.show()
-
-    fig2 = plt.figure(figsize=(10,55))
-    fig2.patch.set_facecolor('white')
-    for i in range(len(atks)):
-        
-        
-        ex = torch.max(adv_images[0][1].abs(), dim=1)
-        ex = np.transpose(ex[0].detach(), (1,2,0))
-        
-        x_range = [0.03, 0.1]
-        histogram, bin_edges = np.histogram(ex, bins=1000, range=(x_range[0], x_range[1]))
-
-        plt.subplot(len(atks)//2, 2,i+1)
-        plt.title(atks[i].__class__.__name__)
-        plt.xlabel("grayscale value")
-        plt.ylabel("pixel count")
-        plt.xlim(x_range)  # <- named arguments do not work here
-
-        plt.plot(bin_edges[0:-1], histogram)  # <- or here
-    
-    plt.show()
-
-
-        
-
-
-
-# ## Plot historgam of noise
-
-# In[70]:
+# In[43]:
 
 
 if train_again == False:
@@ -412,20 +439,23 @@ if train_again == False:
         # attacked img [i][0]
         adv_test = adv_images[i][0][0]
 
+        
         #print(noise_test.size(),adv_test.size(),img_variable[0].size())
         
         img_noise = img_variable[0] + noise_test
 
         test0 = img_noise - adv_test
-    
+
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
 
 
 
+
+
 # Convert to py file
 
-# In[ ]:
+# In[13]:
 
 
 get_ipython().system('jupyter nbconvert --to script torchattacks_IMAGENET.ipynb')
