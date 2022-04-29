@@ -1,1 +1,1 @@
-C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_SecondAttempt_warm_restart-f4bd13ed-0a68-4e55-94dd-229654061bae/adversarial_efficientnet_b7_cifar100.pth
+C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6-190c0ba3-ee49-4735-aa48-d41afa8c3c0c/plot.pth
