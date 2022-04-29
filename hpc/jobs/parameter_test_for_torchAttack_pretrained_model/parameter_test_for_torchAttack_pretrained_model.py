@@ -23,7 +23,7 @@ from os.path import exists
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
-MODEL_PATH = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6-190c0ba3-ee49-4735-aa48-d41afa8c3c0c/adversarial_efficientnet_b7_cifar100.pth"
+MODEL_PATH = "../trainedModels/poorly_regularised_efficientNet_b7_cifar100.pth"
 ATTACK_PATH = "adversarial_examples_and_accuracies.pth"
 
 #%% Dumb function #################################################################################
@@ -294,5 +294,6 @@ for indx, eps in enumerate(EPSILONS):
 
 torch.save({
     "accuracies" : accuracies,
-    "examples" : examples
+    "examples" : examples,
+    "epsilons" : EPSILONS
     }, ATTACK_PATH)    
