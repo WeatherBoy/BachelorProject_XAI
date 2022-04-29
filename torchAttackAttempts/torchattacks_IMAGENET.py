@@ -33,10 +33,10 @@ print(f"Using {DEVICE} device")
 
 # Path to saving the attack
 if train_again == True:
-    save_akt_path = "../plotables/AttacksVGG.pth"
+    atk_path = "../plotables/AttacksVGG.pth"
 else:
-    save_akt_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
-print(f"Saving model in path:{save_akt_path}")
+    atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
+print(f"Saving model in path:{atk_path}")
 
 
 # ## Downloading data
@@ -253,7 +253,7 @@ if train_again == True:
         pred_images.append(adv_pred)
         adv_name.append(atk.__class__.__name__)
 
-    torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, save_akt_path)
+    torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path)
 
 
 # ## Plotting 
@@ -326,7 +326,7 @@ def plotAttacksTable(atks,adv_images, pred_images):
 
 if train_again == False:
     # Loading!
-    #attack = torch.load(save_akt_path,map_location = torch.device(DEVICE))
+    #attack = torch.load(atk_path,map_location = torch.device(DEVICE))
     #adv_images = attack["adv_images"]
     #pred_images = attack["pred_images"]
     #adv_name = attack["adv_names"]
