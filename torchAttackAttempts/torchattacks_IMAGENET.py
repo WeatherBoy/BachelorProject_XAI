@@ -33,7 +33,7 @@ print(f"Using {DEVICE} device")
 
 # Path to saving the attack
 if train_again == True:
-    save_akt_path = "../plotables/AttacksVGG.pth"
+    save_akt_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttacksVGG.pth"
 else:
     save_akt_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
 print(f"Saving model in path:{save_akt_path}")
@@ -239,9 +239,9 @@ if train_again == True:
         adv_name.append(atk.__class__.__name__)
 
     # Compute Saliency map
-    print("_"*70)
-    print("\nsaliency map")
-    saliency_im,_ = saliencyMapSingleImage(model, img_variable)
+    #print("_"*70)
+    #print("\nsaliency map")
+    #saliency_im,_ = saliencyMapSingleImage(model, img_variable)
 
     torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, save_akt_path)
 

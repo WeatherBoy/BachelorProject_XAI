@@ -12,13 +12,14 @@ print(f"Using {DEVICE} device")
 good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
 save_model_path1 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_plot" + ".pth"
 save_model_path2 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6" + ".pth"
+save_model_path2_1 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6-190c0ba3-ee49-4735-aa48-d41afa8c3c0c/plot.pth"
 save_model_path3 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/main_cls_but_altered_by_Felix-956fe06e-3fbb-433b-8688-1e7ddd1bb681/adversarial_ResNet18_cifar100.pth"
 save_model_path4 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_150_Epochs_weight_decay_1e5-93aa7695-4b38-48a1-8fc0-03cb5ae86187/adversarial_efficientnet_b7_cifar100.pth"
 save_model_path5 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_150_Epochs-bed3c342-b686-4603-90b9-e4c93ff1d02a/adversarial_efficientnet_b7_cifar100.pth"
 save_model_path6 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_400_Epochs-e0a6c4a0-c339-42c9-be65-9b2a22219d95/adversarial_efficientnet_v2_cifar100.pth"
 save_model_path7 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7-3317d999-41d2-4930-bc0e-4cb93bfe5fe5/adversarial_efficientnet_b7_cifar100.pth"
 
-checkpoint = torch.load(save_model_path2, map_location=torch.device(DEVICE))
+checkpoint = torch.load(save_model_path2_1, map_location=torch.device(DEVICE))
 
 try:
     accuracies = checkpoint['accuracy']
