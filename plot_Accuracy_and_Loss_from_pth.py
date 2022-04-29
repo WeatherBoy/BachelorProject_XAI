@@ -1,4 +1,3 @@
-from tabnanny import check
 import torch
 from matplotlib import pyplot as plt
 import tikzplotlib
