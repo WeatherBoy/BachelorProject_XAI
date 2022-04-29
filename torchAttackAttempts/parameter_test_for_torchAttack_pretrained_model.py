@@ -1,23 +1,13 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # # Testing some parameter of some attack
 # I wanted to make a test of some attack-parameter, to see how it affects the model (net) that we are attacking. A great example is the increasing epsilon of FGSM that proved to (quite intutivly) lower the accuracy of the trained model.
 
 #%% Imports and initialization ####################################################################
 
 import torch
+import torchvision
 import torch.nn.functional as F
-from torch import nn
-from torch import optim
-from torchvision import datasets, utils, models
-from torch.utils.data import DataLoader, random_split
-from torchvision.transforms import ToTensor
 
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-from os.path import exists
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -73,42 +63,42 @@ torch.manual_seed(RANDOM_SEED)
 torch.cuda.manual_seed(RANDOM_SEED)
 ##############################################################
 
-trainval_set = datasets.CIFAR100(
+trainval_set = torchvision.datasets.CIFAR100(
     root = '../data/datasetCIFAR100',
     train = True,                         
-    transform = ToTensor(), 
+    transform = torchvision.transformsToTensor(), 
     download = True
     )
 
-test_set = datasets.CIFAR100(
+test_set = torchvision.datasets.CIFAR100(
     root = '../data/datasetCIFAR100', 
     train = False, 
-    transform = ToTensor()
+    transform = torchvision.transformsToTensor()
     )
 
 # Creating data indices for training and validation splits:
 train_num = int(len(trainval_set) * (1 - VALIDATION_SPLIT))
-train_set, val_set = random_split(trainval_set, [train_num, len(trainval_set) - train_num])
+train_set, val_set = torch.utils.data.random_split(trainval_set, [train_num, len(trainval_set) - train_num])
 msg("Split train data into trainset and validation set.")
 
-train_loader = DataLoader(
+train_loader = torch.utils.data.DataLoader(
     train_set,
     batch_size=BATCH_SIZE,
     shuffle=True,
     num_workers=NUM_WORKERS
     )
 
-val_loader = DataLoader(
+val_loader = torch.utils.data.DataLoader(
     val_set,
     batch_size=BATCH_SIZE,
-    shuffle=True,
+    shuffle=False,
     num_workers=NUM_WORKERS
     )
 
-test_loader = DataLoader(
+test_loader = torch.utils.data.DataLoader(
     test_set,
     batch_size=BATCH_SIZE,
-    shuffle=True,
+    shuffle=False,
     num_workers=NUM_WORKERS
     )
 
@@ -142,7 +132,7 @@ if I_Want_Intermediary_Test:
 
 #%% Loading the model #############################################################################
 
-model = models.efficientnet_b7(pretrained=False).to(DEVICE)
+model = torchvision.models.efficientnet_b7(pretrained=False).to(DEVICE)
 checkpoint = torch.load(MODEL_PATH, map_location=torch.device(DEVICE))
 model.load_state_dict(checkpoint['model_state_dict'])
 
@@ -281,18 +271,19 @@ NUM_EPSILONS = 5
 EPSILONS = torch.linspace(0, 0.3, NUM_EPSILONS + 1)
 EPSILON_STEP_SIZE = EPSILONS[1].item()
 
-accuracies = np.zeros(NUM_EPSILONS)
-examples = np.zeros(NUM_EPSILONS)
+accuracies = []
+examples = []
 
 SEED = np.random.randint(low=0, high=2**30)        
         
 # Run test for each epsilon
 for indx, eps in enumerate(EPSILONS):
     acc, ex = test(model, DEVICE, test_loader, eps, SEED)
-    accuracies[indx] = acc
-    examples[indx] = ex
+    accuracies.append(acc)
+    examples.append(ex)
 
 torch.save({
     "accuracies" : accuracies,
-    "examples" : examples
-    }, ATTACK_PATH)    
+    "examples" : examples,
+    "epsilons" : EPSILONS
+    }, ATTACK_PATH)      
