@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[2]:
+# In[3]:
 
 
 import torch
@@ -45,7 +45,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[3]:
+# In[4]:
 
 
 def msg(
@@ -77,7 +77,7 @@ def msg(
 
 # ## Downloading data
 
-# In[4]:
+# In[5]:
 
 
 BATCH_SIZE = 32 #128
@@ -137,7 +137,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[5]:
+# In[6]:
 
 
 cfg = {
@@ -245,7 +245,7 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[6]:
+# In[7]:
 
 
 
@@ -271,7 +271,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\
 
 # ## Test of dim
 
-# In[9]:
+# In[8]:
 
 
 
@@ -311,7 +311,7 @@ if DimCheck == True:
 
 # ## Checkpointing stuff
 
-# In[10]:
+# In[9]:
 
 
 # It is important that it is initialized to zero
@@ -394,7 +394,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[11]:
+# In[10]:
 
 
 
@@ -410,7 +410,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 
 # Train and testing loops
 
-# In[12]:
+# In[11]:
 
 
 def train_loop(model, loader, loss_fn, optimizer, epoch_num):
@@ -429,7 +429,7 @@ def train_loop(model, loader, loss_fn, optimizer, epoch_num):
         x_hat, mean, log_var = model(x)
 
         # Compute loss
-        KLD_scale = torch.exp((epoch_num - numEpochs)/4)
+        KLD_scale = np.exp((epoch_num - numEpochs)/4)
         loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
         loss = loss_repo + loss_KLD
 
@@ -463,7 +463,7 @@ def train_loop(model, loader, loss_fn, optimizer, epoch_num):
 
     return train_avg_repo, train_avg_KLD
 
-def test_loop(model, loader, loss_fn):
+def test_loop(model, loader, loss_fn, epoch_num):
     model.eval()
 
     num_batches = len(loader)
@@ -476,7 +476,7 @@ def test_loop(model, loader, loss_fn):
 
             # Compute loss
             x_hat, mean, log_var = model(x)
-            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var)
+            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, epoch_num)
 
             val_avg_repo += loss_repo.item()
             val_avg_KLD += loss_KLD.item()
@@ -489,7 +489,7 @@ def test_loop(model, loader, loss_fn):
 
 # Let the training begin!
 
-# In[26]:
+# In[12]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -499,7 +499,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     for epoch in range(startEpoch,numEpochs):
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, epoch +1)
-        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function)
+        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, epoch + 1)
 
         # Save information for plotting
         loss_train[0,epoch], loss_train[1,epoch]    = train_avg_repo, train_avg_KLD
@@ -525,5 +525,4 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
-
 
