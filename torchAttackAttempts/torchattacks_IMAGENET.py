@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[2]:
+# In[1]:
 
 
 import torch
@@ -23,9 +23,9 @@ import requests
 import os
 from PIL import Image
 from torch.autograd import Variable
+from captum.attr import IntegratedGradients
 
-
-train_again = False
+train_again = True
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -33,17 +33,17 @@ print(f"Using {DEVICE} device")
 
 # Path to saving the attack
 if train_again == True:
-    save_akt_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttacksVGG.pth"
+    atk_path = "../plotables/AttacksVGG.pth"
 else:
-    save_akt_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
-print(f"Saving model in path:{save_akt_path}")
+    atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
+print(f"Saving model in path:{atk_path}")
 
 
 # ## Downloading data
 # 
 # Downloading photo from internet!
 
-# In[3]:
+# In[2]:
 
 
 def download(url,fname):
@@ -80,7 +80,7 @@ labels = requests.get(labels_link).json()
 
 # Pre- and deprocessing of the image
 
-# In[4]:
+# In[3]:
 
 
 def preprocess(image, size=224):
@@ -101,19 +101,17 @@ def deprocess(image):
     return transform(image)
 
 
-# 
-
 # ## Model under attack
 # 
 # The model obviously also needs to be defined:
 
-# In[5]:
+# In[4]:
 
 
 #Using VGG-19 pretrained model for image classification
 model = models.vgg19(pretrained=True).to(DEVICE)
-for param in model.parameters():
-    param.requires_grad = False
+#for param in model.parameters():
+#    param.requires_grad = False
 
 model.eval()
 print()
@@ -121,7 +119,7 @@ print()
 
 # Plot image
 
-# In[6]:
+# In[5]:
 
 
 data = preprocess(img)
@@ -144,55 +142,37 @@ plt.imshow(np.asarray(img))
 print(f"pixel values: min {img_variable.min().item()}\tmax {img_variable.max().item()}")
 
 
-# # different attacks on the model
+# # Different attacks on the model
 
-# In[7]:
+# In[19]:
 
 
 atks = [
-    FGSM(model, eps=8/255),
-    BIM(model, eps=8/255, alpha=2/255, steps=100),
-    RFGSM(model, eps=8/255, alpha=2/255, steps=100),
-    CW(model, c=1, lr=0.01, steps=100, kappa=0),
-    PGD(model, eps=8/255, alpha=2/225, steps=100, random_start=True),
-    PGDL2(model, eps=1, alpha=0.2, steps=100),
-    EOTPGD(model, eps=8/255, alpha=2/255, steps=100, eot_iter=2),
-    FFGSM(model, eps=8/255, alpha=10/255),
-    TPGD(model, eps=8/255, alpha=2/255, steps=100),
-    MIFGSM(model, eps=8/255, alpha=2/255, steps=100, decay=0.1),
     VANILA(model),
-    GN(model, std=0.1),
-    APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='ce'),
-    APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='dlr'),
-    APGDT(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1),
-    FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=False),
-    FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=True),
-    Square(model, eps=8/255, n_queries=5000, n_restarts=1, loss='ce'),
-    AutoAttack(model, eps=8/255, n_classes=10, version='standard'),
-    OnePixel(model, pixels=5, inf_batch=50),
-    DeepFool(model, steps=100),
-    DIFGSM(model, eps=8/255, alpha=2/255, steps=100, diversity_prob=0.5, resize_rate=0.9)
+    # FGSM(model, eps=8/255),
+    # BIM(model, eps=8/255, alpha=2/255, steps=100),
+    # RFGSM(model, eps=8/255, alpha=2/255, steps=100),
+    # CW(model, c=1, lr=0.01, steps=100, kappa=0),
+    # PGD(model, eps=8/255, alpha=2/225, steps=100, random_start=True),
+    # PGDL2(model, eps=1, alpha=0.2, steps=100),
+    # EOTPGD(model, eps=8/255, alpha=2/255, steps=100, eot_iter=2),
+    # FFGSM(model, eps=8/255, alpha=10/255),
+    # TPGD(model, eps=8/255, alpha=2/255, steps=100),
+    # MIFGSM(model, eps=8/255, alpha=2/255, steps=100, decay=0.1),
+    # GN(model, std=0.1),
+    # APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='ce'),
+    # APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='dlr'),
+    # APGDT(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1),
+    # FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=False),
+    # FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=True),
+    # Square(model, eps=8/255, n_queries=5000, n_restarts=1, loss='ce'),
+    # AutoAttack(model, eps=8/255, n_classes=10, version='standard'),
+    # OnePixel(model, pixels=5, inf_batch=50),
+    # DeepFool(model, steps=100),
+    # DIFGSM(model, eps=8/255, alpha=2/255, steps=100, diversity_prob=0.5, resize_rate=0.9)
 ]
 
 
-
-def advAtkSingleImage(image,label, atk):
-    # Attack
-    adv_image = atk(image, label)
-    output_adv = model(adv_image)
-    
-    # Label and Probability 
-    label_idx_adv = torch.argmax(output_adv).unsqueeze(0)
-    x_pred_prob_adv = F.softmax(output_adv, dim=1).max()*100
-
-    # Determind noise: avd = img + noise => noise = avd - img
-    noise = adv_image - image
-    
-    # Save info in lists
-    adv_dir =  [adv_image, noise] #['a','b']#[adv_image, noise]
-    pred_dir = [label_idx_adv,x_pred_prob_adv] #{"label":label_idx_adv,"prob": x_pred_prob_adv}
-    
-    return adv_dir, pred_dir
 
 def saliencyMapSingleImage(model, data):
     
@@ -215,12 +195,47 @@ def saliencyMapSingleImage(model, data):
     saliency_mean_abs = torch.mean(data.grad.abs(), dim=1) #torch.max(X.grad.data.abs(),dim=1)
     saliency_max_abs, _ = torch.max(data.grad.abs(), dim=1)
 
-    return saliency_max_abs, saliency_mean_abs
+    return saliency_max_abs#, saliency_mean_abs
+
+def intergratedGradSingleImage(model,data,label, trans: bool = False):
+    ig = IntegratedGradients(model)
+    model.zero_grad()
+    attr_ig, delta = ig.attribute(data, target=label,baselines=data * 0, return_convergence_delta=True)
+    if trans:
+        attr_ig = np.transpose(attr_ig.squeeze().cpu().detach().numpy(), (1, 2, 0))
+    
+    return attr_ig
+ 
+
+def advAtkSingleImage(image,label, atk):
+    # Attack and Saliency maps
+    print("\tadversarial example")
+    adv_image = atk(image, label)
+    print("\tSaliency map")
+    saliency_grad = saliencyMapSingleImage(model, image)
+    print("\tIntergrated gradient")
+    saliency_intgrad = intergratedGradSingleImage(model, data, label)
+    
+    # Label and Probability 
+    output_adv = model(adv_image)
+    label_idx_adv = torch.argmax(output_adv).unsqueeze(0)
+    x_pred_prob_adv = F.softmax(output_adv, dim=1).max()*100
+
+    # Determind noise: avd = img + noise => noise = avd - img
+    noise = adv_image - image
+    
+    # Save info in lists
+    adv_dir =  [adv_image, noise, saliency_grad, saliency_intgrad] #['a','b']#[adv_image, noise]
+    pred_dir = [label_idx_adv,x_pred_prob_adv] #{"label":label_idx_adv,"prob": x_pred_prob_adv}
+    
+    return adv_dir, pred_dir
+
+
 
 
 # Begin attacking!
 
-# In[8]:
+# In[7]:
 
 
 if train_again == True:
@@ -238,40 +253,26 @@ if train_again == True:
         pred_images.append(adv_pred)
         adv_name.append(atk.__class__.__name__)
 
-    # Compute Saliency map
-    #print("_"*70)
-    #print("\nsaliency map")
-    #saliency_im,_ = saliencyMapSingleImage(model, img_variable)
-
-    torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, save_akt_path)
+    torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path)
 
 
 # ## Plotting 
+# Function to make plot, with different attackt and their saliency maps
 
-# In[9]:
+# In[22]:
 
 
-
-if train_again == False:
-    # Loading!
-    attack = torch.load(save_akt_path,map_location = torch.device(DEVICE))
-    adv_images = attack["adv_images"]
-    pred_images = attack["pred_images"]
-    #adv_name = attack["adv_names"]
-    #saliency_im = attack["saliencyMap"]
-    saliency_im,_ = saliencyMapSingleImage(model, img_variable)
-
-    saliency_show = np.transpose(saliency_im,(1,2,0))
+def plotAttacksTable(atks,adv_images, pred_images):
     cnt = 0
 
-    fig1 = plt.figure(figsize=(7,70))
+    fig1 = plt.figure(figsize=(7,5))
     fig1.patch.set_facecolor('white')
 
     for i in range(len(atks)):
-        for j in range(len(adv_images[0])+1):
+        for j in range(len(adv_images[0])):
             cnt += 1
 
-            plt.subplot(len(atks),len(adv_images[0]) + 1,cnt)
+            plt.subplot(len(atks),len(adv_images[0]),cnt)
             plt.xticks([], [])
             plt.yticks([], [])
       
@@ -290,17 +291,27 @@ if train_again == False:
             
                 plt.title(atks[i].__class__.__name__)
                 plt.imshow(ex.max()-ex,cmap= 'gray')
-
-            else: # Saliency map!
-                plt.title('Saliency of original image')
-
-                ex,_ = torch.max(saliency_show, dim=0,  keepdim=True)
-                ex = np.transpose(ex.detach(), (1,2,0))
+            elif j == 2: # Saliency map
+                ex = adv_images[i][j][0]
+            
 
                 # standardize 
                 ex = (ex - ex.min())/(ex.max() -ex.min())
+                plt.title('Saliency map')
+                plt.imshow(ex.max() - ex, cmap='gray')
                 
-                plt.imshow(saliency_show.max() - saliency_show, cmap = 'gray')
+
+            else: # intergrated gradient
+                
+                ex,_ = torch.max(adv_images[i][j][0], dim=0,  keepdim=True)
+                ex = np.transpose(ex.detach(), (1,2,0))
+
+                # standardize 
+                ex = (ex - ex.min())/(ex.max() -ex.min())#adv_images[3][1][0].detach()
+            
+                plt.title('Intergrated gradient')
+                plt.imshow(ex.max()-ex,cmap= 'gray')
+                #plt.imshow(saliency_show.max() - saliency_show, cmap = 'gray')
 
 
             
@@ -309,9 +320,24 @@ if train_again == False:
     print()
 
 
+# In[24]:
+
+
+
+if train_again == False:
+    # Loading!
+    #attack = torch.load(atk_path,map_location = torch.device(DEVICE))
+    #adv_images = attack["adv_images"]
+    #pred_images = attack["pred_images"]
+    #adv_name = attack["adv_names"]
+    #saliency_im = attack["saliencyMap"]
+    #saliency_im = saliencyMapSingleImage(model, img_variable)
+    plotAttacksTable(atks,adv_images, pred_images)
+
+
 # ### Plot histogram of noise
 
-# In[62]:
+# In[ ]:
 
 
 if train_again == False:
@@ -362,7 +388,7 @@ if train_again == False:
 
 # ### Binaries interesting noise
 
-# In[63]:
+# In[ ]:
 
 
 if train_again == False:
@@ -429,7 +455,7 @@ if train_again == False:
 
 # ## Sanity check: noise correctly?
 
-# In[43]:
+# In[ ]:
 
 
 if train_again == False:
@@ -448,15 +474,4 @@ if train_again == False:
 
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
-
-
-
-
-
-# Convert to py file
-
-# In[13]:
-
-
-get_ipython().system('jupyter nbconvert --to script torchattacks_IMAGENET.ipynb')
 
