@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[75]:
+# In[2]:
 
 
 import torch
@@ -25,7 +25,7 @@ from PIL import Image
 from torch.autograd import Variable
 from captum.attr import IntegratedGradients, Saliency
 
-train_again = True
+train_again = False
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -43,7 +43,7 @@ print(f"Saving model in path:{atk_path}")
 # 
 # Downloading photo from internet!
 
-# In[76]:
+# In[3]:
 
 
 def download(url,fname):
@@ -80,7 +80,7 @@ labels = requests.get(labels_link).json()
 
 # Pre- and deprocessing of the image
 
-# In[77]:
+# In[4]:
 
 
 def preprocess(image, size=224):
@@ -105,7 +105,7 @@ def deprocess(image):
 # 
 # The model obviously also needs to be defined:
 
-# In[78]:
+# In[5]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -119,7 +119,7 @@ print()
 
 # Plot image
 
-# In[79]:
+# In[8]:
 
 
 data = preprocess(img)
@@ -140,6 +140,8 @@ plt.title(f"{x_pred}\nprob: {x_pred_prob:.1f}")
 plt.imshow(np.asarray(img))
 
 print(f"pixel values: min {img_variable.min().item()}\tmax {img_variable.max().item()}")
+
+print(type(data*0))
 
 
 # # Different attacks on the model
@@ -198,45 +200,12 @@ def saliencyMapSingleImage(model, data):
 
     return saliency_max_abs#, saliency_mean_abs
 
-def saliencyTest2(model, img):
-    #we don't need gradients w.r.t. weights for a trained model
-    for param in model.parameters():
-        param.requires_grad = False
-    
-    #set model in eval mode
-    model.eval()
-    #transoform input PIL image to torch.Tensor and normalize
-    input = img
-    #input.unsqueeze_(0)
-
-    #we want to calculate gradient of higest score w.r.t. input
-    #so set requires_grad to True for input 
-    input.requires_grad_()
-    #forward pass to calculate predictions
-    preds = model(input)
-    score, _ = torch.max(preds, 1)
-    #backward pass to get gradients of score predicted class w.r.t. input image
-    score.backward()
-    #get max along channel axis
-  
-
-    slc, _ = torch.max(torch.abs(input.grad[0]), dim=0)
-    #normalize to [0..1]
-    slc = (slc - slc.min())/(slc.max()-slc.min())
-
-    return slc
-def saliencyTest(model,data,label):
-    saliency = Saliency(model)
-    model.zero_grad()
-    attr_sal = saliency.attribute(data, target=label)
-
-    return attr_sal
 
 
 def intergratedGradSingleImage(model,data,label, trans: bool = False):
     ig = IntegratedGradients(model)
     model.zero_grad()
-    attr_ig, delta = ig.attribute(data, target=label,baselines=data * 0, return_convergence_delta=True)
+    attr_ig, delta = ig.attribute(data, target=label.to(DEVICE),baselines=data * 0, return_convergence_delta=True)
     if trans:
         attr_ig = np.transpose(attr_ig.squeeze().cpu().detach().numpy(), (1, 2, 0))
     
@@ -512,4 +481,14 @@ if train_again == False:
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
 
+
+
+
+
+# Convert to py file
+
+# In[4]:
+
+
+get_ipython().system("jupyter nbconvert --to script 'torchattacks_IMAGENET_test.ipynb'")
 
