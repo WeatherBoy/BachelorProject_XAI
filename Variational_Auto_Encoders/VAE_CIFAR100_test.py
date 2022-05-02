@@ -252,7 +252,7 @@ class Model(nn.Module):
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 10 # hyperparameter
 lr = 1e-4
-numEpochs = 100
+numEpochs = 200
 modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
@@ -525,4 +525,70 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
+
+
+# # Plot reproduction 
+
+# In[ ]:
+
+
+# my_model_path = "/Users/Alex/Documents/results/savedModels/VAE_CIFAR100.pth"
+# checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
+# model.load_state_dict(checkpoint['model_state_dict'])
+
+
+# In[ ]:
+
+
+
+# Set the model in evaluation mode. In this case this is for the Dropout layers
+model.eval()
+
+
+import matplotlib.pyplot as plt
+model.eval()
+
+def batchplot(batch_show,image):
+# How many images from the batch will you show?
+
+
+    def imshow(img):
+        #img = img / 2 + 0.5     # unnormalize
+            npimg = img.numpy()
+            plt.imshow(np.transpose(npimg, (1, 2, 0)))
+            #plt.show()
+
+    # Model reconstruction
+    x_hat, _, _ = model(image)
+
+    fig1=plt.figure(figsize=(17,4))
+    fig1.patch.set_facecolor('white')
+    for i in range(batch_show):
+
+        plt.subplot(2,batch_show,i+1)
+        imshow(image[i])
+        plt.xticks([],[])
+        plt.yticks([],[])
+        plt.title(classes[labels[i].item()])
+        if i == 0:
+            plt.ylabel('Original image')
+        
+        plt.subplot(2,batch_show,batch_show+ i+1)
+        imshow(x_hat[i].detach())
+        plt.xticks([],[])
+        plt.yticks([],[])
+        if i == 0:
+            plt.ylabel('Reproduced image')
+    pass
+
+
+dataiter = iter(test_loader)
+x, labels = dataiter.next()
+
+x_hat, mean, var = model(x)
+
+
+batch_show = 7
+
+#batchplot(batch_show,x)
 
