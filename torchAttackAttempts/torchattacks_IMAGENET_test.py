@@ -34,7 +34,7 @@ print(f"Using {DEVICE} device")
 
 # Path to saving the attack
 if train_again == True:
-    atk_path = "../plotables/AttacksVGG.pth"
+    atk_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttacksVGG.pth"
 else:
     atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
 print(f"Saving model in path:{atk_path}")
