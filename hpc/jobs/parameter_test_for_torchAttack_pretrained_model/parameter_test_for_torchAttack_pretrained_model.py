@@ -13,6 +13,7 @@ import numpy as np
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
+ARCHITECTURE_PATH = "../network_architectures/seresnet152_architecture.pt"
 MODEL_PATH = "../trainedModels/poorly_regularised_efficientNet_b7_cifar100.pth"
 ATTACK_PATH = "adversarial_examples_and_accuracies.pth"
 
@@ -132,7 +133,7 @@ if I_Want_Intermediary_Test:
 
 #%% Loading the model #############################################################################
 
-model = torchvision.models.efficientnet_b7(pretrained=False).to(DEVICE)
+model = torch.jit.load(ARCHITECTURE_PATH).to(DEVICE)
 checkpoint = torch.load(MODEL_PATH, map_location=torch.device(DEVICE))
 model.load_state_dict(checkpoint['model_state_dict'])
 
