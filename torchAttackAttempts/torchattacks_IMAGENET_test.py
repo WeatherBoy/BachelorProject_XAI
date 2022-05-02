@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[2]:
+# In[14]:
 
 
 import torch
@@ -21,11 +21,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import requests
 import os
+import cv2
 from PIL import Image
 from torch.autograd import Variable
 from captum.attr import IntegratedGradients, Saliency
 
-train_again = False
+train_again = True
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -76,6 +77,7 @@ labels_link = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-la
 labels = requests.get(labels_link).json()
 
 #labels = {int(idx):label for idx, label in labels_json}
+
 
 
 # Pre- and deprocessing of the image
@@ -219,7 +221,7 @@ def advAtkSingleImage(image,label, atk):
     print("\tSaliency map")
     saliency_grad = saliencyMapSingleImage(model, image)
     print("\tIntergrated gradient")
-    saliency_intgrad = intergratedGradSingleImage(model, data, label)
+    saliency_intgrad = intergratedGradSingleImage(model, image, label)
     
     # Label and Probability 
     output_adv = model(adv_image)
@@ -461,10 +463,10 @@ if train_again == False:
 
 # ## Sanity check: noise correctly?
 
-# In[ ]:
+# In[10]:
 
 
-if train_again == False:
+if False:
     for i in range(18):
         # noise [i][1]
         noise_test = adv_images[i][1][0]
@@ -481,14 +483,4 @@ if train_again == False:
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
 
-
-
-
-
-# Convert to py file
-
-# In[4]:
-
-
-get_ipython().system("jupyter nbconvert --to script 'torchattacks_IMAGENET_test.ipynb'")
 
