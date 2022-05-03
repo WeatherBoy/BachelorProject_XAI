@@ -38,7 +38,7 @@ if train_again == True:
     atk_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttacksVGGImnet.pth"
 else:
     atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGGImnet.pth"
-print(f"Saving model in path: {atk_path}")
+print(f"Saving model in path:{atk_path}")
 
 # Path to data folder
 imagePath = "Imagenet_pics"
@@ -98,32 +98,32 @@ print()
 # In[118]:
 
 
-if train_again == False:
-    cnt = 1
-    label_idx = []
 
-    plt.figure(figsize=(10,15))
+cnt = 1
+label_idx = []
+
+plt.figure(figsize=(10,15))
 
 
-    for i in range(len(images)):
+for i in range(len(images)):
         
-        output = model(imgs_var[i])
-        idx = torch.argmax(output).unsqueeze(0) #torch.max(output.data, 1)   #get an index(class number) of a largest element
-        label_idx.append(idx)
+    output = model(imgs_var[i])
+    idx = torch.argmax(output).unsqueeze(0) #torch.max(output.data, 1)   #get an index(class number) of a largest element
+    label_idx.append(idx)
 
-        x_pred = labels[idx.item()]
+    x_pred = labels[idx.item()]
         
 
-        # Probability 
-        output_probs = F.softmax(output, dim=1)
-        x_pred_prob =  output_probs.max()*100
+    # Probability 
+    output_probs = F.softmax(output, dim=1)
+    x_pred_prob =  output_probs.max()*100
 
-        plt.subplot(len(imgs_var)//3+2,3,cnt)
-        plt.axis('off')
-        plt.title(f"{x_pred}\nprob: {x_pred_prob:.1f}")
-        plt.imshow(images[i])
+    plt.subplot(len(imgs_var)//3+2,3,cnt)
+    plt.axis('off')
+    plt.title(f"{x_pred}\nprob: {x_pred_prob:.1f}")
+    plt.imshow(images[i])
 
-        cnt +=1
+    cnt +=1
 
 
 
@@ -474,5 +474,4 @@ if False:
 
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
-
 
