@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[102]:
+# In[2]:
 
 
 import torch
@@ -20,10 +20,8 @@ from torchvision import transforms, models
 import numpy as np
 import matplotlib.pyplot as plt
 import requests
-import os
 import cv2
 import glob
-from PIL import Image
 from torch.autograd import Variable
 from captum.attr import IntegratedGradients
 
@@ -38,7 +36,7 @@ if train_again == True:
     atk_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttacksVGGImnet.pth"
 else:
     atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGGImnet.pth"
-print(f"Saving model in path:{atk_path}")
+print(f"Saving model in path: {atk_path}")
 
 # Path to data folder
 imagePath = "Imagenet_pics"
@@ -48,7 +46,7 @@ imagePath = "Imagenet_pics"
 # 
 # Downloading photo folder. First the processing functions. Pre- and deprocessing of the image
 
-# In[103]:
+# In[3]:
 
 
 
@@ -81,7 +79,7 @@ labels = requests.get(labels_link).json()
 # 
 # The model obviously also needs to be defined:
 
-# In[104]:
+# In[4]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -95,7 +93,7 @@ print()
 
 # Plot each image and their predictions
 
-# In[118]:
+# In[5]:
 
 
 
@@ -130,7 +128,7 @@ for i in range(len(images)):
 
 # # Different attacks on the model
 
-# In[119]:
+# In[6]:
 
 
 atks = [
@@ -224,15 +222,15 @@ def advAtkSingleImage(image,label, atk):
 
 # Begin attacking!
 
-# In[120]:
+# In[7]:
 
 
 if train_again == True:
     imgs_atk_list = [] 
-    iter_label_idx = iter(label_idx)
+    cnt = 0
     
     for im in imgs_var:
-        print("_"*70)
+        print("_"*70 +" Image "+str(cnt+1))
         # Initialization
         adv_images = []
         pred_images = []
@@ -243,14 +241,14 @@ if train_again == True:
             print(atk.__class__.__name__)
             
             # Perform attack on image
-            label = next(iter_label_idx)
-            adv_im, adv_pred = advAtkSingleImage(im, label, atk)
+            adv_im, adv_pred = advAtkSingleImage(im, label_idx[cnt], atk)
 
             adv_images.append(adv_im)
             pred_images.append(adv_pred)
             adv_name.append(atk.__class__.__name__)
         
         imgs_atk_list.append({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images})
+        cnt += 1
 
     torch.save(imgs_atk_list, atk_path)
 
@@ -474,4 +472,3 @@ if False:
 
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
-
