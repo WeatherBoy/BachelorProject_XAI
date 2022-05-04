@@ -249,7 +249,7 @@ if train_again == True:
             adv_name.append(atk.__class__.__name__)
         
 
-        torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path+idx+".pth")
+        torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path + str(idx) + ".pth")
         del adv_images, pred_images, adv_name 
 
 
@@ -472,6 +472,4 @@ if False:
 
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
-
-
 
