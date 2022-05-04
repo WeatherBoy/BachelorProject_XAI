@@ -9,10 +9,11 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
 good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
-save_model_path = good_dir + "poorly_regularised_efficientNet_b7_cifar100_ADV_EXAMPS" + ".pth"
+save_model_path1 = good_dir + "poorly_regularised_efficientNet_b7_cifar100_ADV_EXAMPS" + ".pth"
+save_model_path2 = good_dir + "seresnet152_cifar100_ADV_EXAMPS" + ".pth"
 
 #%% Getting the data ##############################################################################
-dict_thingy = torch.load(save_model_path, map_location=torch.device(DEVICE))
+dict_thingy = torch.load(save_model_path2, map_location=torch.device(DEVICE))
 EPSILONS = dict_thingy["epsilons"]
 EPSILON_STEP_SIZE = EPSILONS[1]
 accuracies = dict_thingy["accuracies"]
