@@ -10,21 +10,20 @@
 # 
 # And also defining where to put the model weights
 
-# In[14]:
+# In[2]:
 
 
 import torch
 import torch.nn.functional as F
 from torchattacks import *
-from torchvision import transforms, models, datasets
+from torchvision import transforms, models 
 import numpy as np
 import matplotlib.pyplot as plt
 import requests
-import os
 import cv2
-from PIL import Image
+import glob
 from torch.autograd import Variable
-from captum.attr import IntegratedGradients, Saliency
+from captum.attr import IntegratedGradients
 
 train_again = True
 
@@ -34,60 +33,25 @@ print(f"Using {DEVICE} device")
 
 # Path to saving the attack
 if train_again == True:
-    atk_path = "../plotables/AttacksVGG.pth"
+    atk_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttacksVGGImnet.pth"
 else:
-    atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGG.pth"
-print(f"Saving model in path:{atk_path}")
+    atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGGImnet.pth"
+print(f"Saving model in path: {atk_path}")
+
+# Path to data folder
+imagePath = "Imagenet_pics"
 
 
 # ## Downloading data
 # 
-# Downloading photo from internet!
+# Downloading photo folder. First the processing functions. Pre- and deprocessing of the image
 
 # In[3]:
 
 
-def download(url,fname):
-    response = requests.get(url)
-    with open(fname,"wb") as f:
-        f.write(response.content)
 
-# path for the downloaded images
-imagePath = "../data/downloaded_pics/input.jpg"
-imageDirectory = "../data/downloaded_pics/"
-
-# Check whether the directory exists
-if not os.path.exists(imageDirectory):
-        os.mkdir(imageDirectory)
-        print("A new directory 'downloaded_pics' was created under 'data'.")
-else:
-        print("Directory already exists.")
-             
-# Downloading the image    
-download(
-        "https://raw.githubusercontent.com/EliSchwartz/imagenet-sample-images/master/n02123394_Persian_cat.JPEG",
-        imagePath)
-
-
-# Opening the image
-img = Image.open(imagePath) 
-
-# defining labels for imagenet
-labels_link = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"    
-labels = requests.get(labels_link).json()
-
-#labels = {int(idx):label for idx, label in labels_json}
-
-
-
-# Pre- and deprocessing of the image
-
-# In[4]:
-
-
-def preprocess(image, size=224):
+def preprocess(image):
     transform = transforms.Compose([
-        #transforms.Resize((size,size)),
         transforms.ToTensor(),
         transforms.Lambda(lambda x: x[None]),
     ])
@@ -96,18 +60,26 @@ def preprocess(image, size=224):
 def deprocess(image):
     transform = transforms.Compose([
         transforms.Lambda(lambda x: x[0]),
-        #transforms.Normalize(mean=[0, 0, 0], std=[4.3668, 4.4643, 4.4444]),
-        #transforms.Normalize(mean=[-0.485, -0.456, -0.406], std=[1, 1, 1]),
         transforms.ToPILImage(),
     ])
     return transform(image)
+
+# Load and process images
+images_cv = [cv2.imread(file) for file in glob.glob('Imagenet_pics/*.JPEG')]
+images = [cv2.cvtColor(im_cv, cv2.COLOR_BGR2RGB) for im_cv in images_cv]
+imgs_var = [Variable(preprocess(im), requires_grad=True).to(DEVICE) for im in images]
+
+# defining labels for imagenet
+labels_link = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"    
+labels = requests.get(labels_link).json()
+
 
 
 # ## Model under attack
 # 
 # The model obviously also needs to be defined:
 
-# In[5]:
+# In[4]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -119,61 +91,69 @@ model.eval()
 print()
 
 
-# Plot image
+# Plot each image and their predictions
 
-# In[8]:
-
-
-data = preprocess(img)
-img_variable = Variable(data, requires_grad=True).to(DEVICE)
-
-output = model(img_variable)
-label_idx = torch.argmax(output).unsqueeze(0) #torch.max(output.data, 1)   #get an index(class number) of a largest element
-
-x_pred = labels[label_idx.item()]
-
-# Probability 
-output_probs = F.softmax(output, dim=1)
-x_pred_prob =  output_probs.max()*100
+# In[5]:
 
 
-plt.axis('off')
-plt.title(f"{x_pred}\nprob: {x_pred_prob:.1f}")
-plt.imshow(np.asarray(img))
 
-print(f"pixel values: min {img_variable.min().item()}\tmax {img_variable.max().item()}")
+cnt = 1
+label_idx = []
 
-print(type(data*0))
+plt.figure(figsize=(10,15))
+
+
+for i in range(len(images)):
+        
+    output = model(imgs_var[i])
+    idx = torch.argmax(output).unsqueeze(0) #torch.max(output.data, 1)   #get an index(class number) of a largest element
+    label_idx.append(idx)
+
+    x_pred = labels[idx.item()]
+        
+
+    # Probability 
+    output_probs = F.softmax(output, dim=1)
+    x_pred_prob =  output_probs.max()*100
+
+    plt.subplot(len(imgs_var)//3+2,3,cnt)
+    plt.axis('off')
+    plt.title(f"{x_pred}\nprob: {x_pred_prob:.1f}")
+    plt.imshow(images[i])
+
+    cnt +=1
+
+
 
 
 # # Different attacks on the model
 
-# In[80]:
+# In[6]:
 
 
 atks = [
     VANILA(model),
-    # FGSM(model, eps=8/255),
-    # BIM(model, eps=8/255, alpha=2/255, steps=100),
-    # RFGSM(model, eps=8/255, alpha=2/255, steps=100),
-    # CW(model, c=1, lr=0.01, steps=100, kappa=0),
-    # PGD(model, eps=8/255, alpha=2/225, steps=100, random_start=True),
-    # PGDL2(model, eps=1, alpha=0.2, steps=100),
-    # EOTPGD(model, eps=8/255, alpha=2/255, steps=100, eot_iter=2),
-    # FFGSM(model, eps=8/255, alpha=10/255),
-    # TPGD(model, eps=8/255, alpha=2/255, steps=100),
-    # MIFGSM(model, eps=8/255, alpha=2/255, steps=100, decay=0.1),
-    # GN(model, std=0.1),
-    # APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='ce'),
-    # APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='dlr'),
-    # APGDT(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1),
-    # FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=False),
-    # FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=True),
-    # Square(model, eps=8/255, n_queries=5000, n_restarts=1, loss='ce'),
-    # AutoAttack(model, eps=8/255, n_classes=10, version='standard'),
-    # OnePixel(model, pixels=5, inf_batch=50),
-    # DeepFool(model, steps=100),
-    # DIFGSM(model, eps=8/255, alpha=2/255, steps=100, diversity_prob=0.5, resize_rate=0.9)
+    FGSM(model, eps=8/255),
+    BIM(model, eps=8/255, alpha=2/255, steps=100),
+    RFGSM(model, eps=8/255, alpha=2/255, steps=100),
+    CW(model, c=1, lr=0.01, steps=100, kappa=0),
+    PGD(model, eps=8/255, alpha=2/225, steps=100, random_start=True),
+    PGDL2(model, eps=1, alpha=0.2, steps=100),
+    EOTPGD(model, eps=8/255, alpha=2/255, steps=100, eot_iter=2),
+    FFGSM(model, eps=8/255, alpha=10/255),
+    TPGD(model, eps=8/255, alpha=2/255, steps=100),
+    MIFGSM(model, eps=8/255, alpha=2/255, steps=100, decay=0.1),
+    GN(model, std=0.1),
+    APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='ce'),
+    APGD(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1, loss='dlr'),
+    APGDT(model, eps=8/255, steps=100, eot_iter=1, n_restarts=1),
+    FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=False),
+    FAB(model, eps=8/255, steps=100, n_classes=10, n_restarts=1, targeted=True),
+    Square(model, eps=8/255, n_queries=5000, n_restarts=1, loss='ce'),
+    AutoAttack(model, eps=8/255, n_classes=10, version='standard'),
+    OnePixel(model, pixels=5, inf_batch=50),
+    DeepFool(model, steps=100),
+    DIFGSM(model, eps=8/255, alpha=2/255, steps=100, diversity_prob=0.5, resize_rate=0.9)
 ]
 
 
@@ -216,7 +196,7 @@ def intergratedGradSingleImage(model,data,label, trans: bool = False):
 
 def advAtkSingleImage(image,label, atk):
     # Attack and Saliency maps
-    print("\tadversarial example")
+    print("\tAdversarial example")
     adv_image = atk(image, label)
     print("\tSaliency map")
     saliency_grad = saliencyMapSingleImage(model, image)
@@ -242,25 +222,35 @@ def advAtkSingleImage(image,label, atk):
 
 # Begin attacking!
 
-# In[85]:
+# In[7]:
 
 
 if train_again == True:
-    # Initialization
-    adv_images = []
-    pred_images = []
-    adv_name = []
+    imgs_atk_list = [] 
+    cnt = 0
+    
+    for im in imgs_var:
+        print("_"*70 +" Image "+str(cnt+1))
+        # Initialization
+        adv_images = []
+        pred_images = []
+        adv_name = []
 
-    for atk in atks:
-        print("_"*70)
-        print(atk)
+        for atk in atks:
+            print("_"*35)
+            print(atk.__class__.__name__)
+            
+            # Perform attack on image
+            adv_im, adv_pred = advAtkSingleImage(im, label_idx[cnt], atk)
+
+            adv_images.append(adv_im)
+            pred_images.append(adv_pred)
+            adv_name.append(atk.__class__.__name__)
         
-        adv_im, adv_pred = advAtkSingleImage(img_variable, label_idx, atk)
-        adv_images.append(adv_im)
-        pred_images.append(adv_pred)
-        adv_name.append(atk.__class__.__name__)
+        imgs_atk_list.append({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images})
+        cnt += 1
 
-    torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path)
+    torch.save(imgs_atk_list, atk_path)
 
 
 # ## Plotting 
@@ -482,5 +472,3 @@ if False:
 
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
-
-
