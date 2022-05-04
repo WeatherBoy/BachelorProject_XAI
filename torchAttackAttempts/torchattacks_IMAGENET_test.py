@@ -200,7 +200,7 @@ def advAtkSingleImage(image,label, atk):
     print("\tAdversarial example")
     adv_image = atk(image, label)
     print("\tSaliency map")
-    saliency_grad = saliencyMapSingleImage(model, image)
+    saliency_grad = saliencyMapSingleImage(model, image, label)
     print("\tIntergrated gradient")
     saliency_intgrad = intergratedGradSingleImage(model, image, label)
     
@@ -474,13 +474,4 @@ if False:
     
 
 
-
-
-
-# Convert to py file
-
-# In[3]:
-
-
-get_ipython().system("jupyter nbconvert --to script 'torchattacks_IMAGENET_test.ipynb'")
 
