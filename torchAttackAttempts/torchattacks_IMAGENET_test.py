@@ -33,7 +33,7 @@ print(f"Using {DEVICE} device")
 
 # Path to saving the attack
 if train_again == True:
-    atk_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttacksVGGImnet.pth"
+    atk_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttackImnet/AttacksVGGImnet_"
 else:
     atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGGImnet.pth"
 print(f"Saving model in path: {atk_path}")
@@ -226,11 +226,10 @@ def advAtkSingleImage(image,label, atk):
 
 
 if train_again == True:
-    imgs_atk_list = [] 
-    cnt = 0
     
-    for im in imgs_var:
-        print("_"*70 +" Image "+str(cnt+1))
+    
+    for idx, im in enumerate(imgs_var):
+        print("_"*70 +" Image "+str(idx+1))
         # Initialization
         adv_images = []
         pred_images = []
@@ -241,16 +240,15 @@ if train_again == True:
             print(atk.__class__.__name__)
             
             # Perform attack on image
-            adv_im, adv_pred = advAtkSingleImage(im, label_idx[cnt], atk)
+            adv_im, adv_pred = advAtkSingleImage(im, label_idx[idx], atk)
 
             adv_images.append(adv_im)
             pred_images.append(adv_pred)
             adv_name.append(atk.__class__.__name__)
         
-        imgs_atk_list.append({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images})
-        cnt += 1
 
-    torch.save(imgs_atk_list, atk_path)
+        torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path+idx+".pth")
+        del adv_images, pred_images, adv_name 
 
 
 # ## Plotting 
