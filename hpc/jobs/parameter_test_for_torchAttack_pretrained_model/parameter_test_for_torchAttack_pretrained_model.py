@@ -14,7 +14,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
 ARCHITECTURE_PATH = "../network_architectures/seresnet152_architecture.pt"
-MODEL_PATH = "../trainedModels/poorly_regularised_efficientNet_b7_cifar100.pth"
+MODEL_PATH = "../trainedModels/seresnet152-170-best.pth"
 ATTACK_PATH = "adversarial_examples_and_accuracies.pth"
 
 #%% Dumb function #################################################################################
@@ -57,6 +57,8 @@ BATCH_SIZE = 128
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 NUM_WORKERS = 1
+CIFAR100_TRAIN_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
+CIFAR100_TRAIN_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
 
 # Setting seeds ##############################################
 np.random.seed(RANDOM_SEED)
@@ -74,7 +76,10 @@ trainval_set = torchvision.datasets.CIFAR100(
 test_set = torchvision.datasets.CIFAR100(
     root = '../data/datasetCIFAR100', 
     train = False, 
-    transform = torchvision.transforms.ToTensor()
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(CIFAR100_TRAIN_MEAN, CIFAR100_TRAIN_STD)
+    ])
     )
 
 # Creating data indices for training and validation splits:
@@ -135,7 +140,7 @@ if I_Want_Intermediary_Test:
 
 model = torch.jit.load(ARCHITECTURE_PATH).to(DEVICE)
 checkpoint = torch.load(MODEL_PATH, map_location=torch.device(DEVICE))
-model.load_state_dict(checkpoint['model_state_dict'])
+model.load_state_dict(checkpoint)
 
 # Set the model in evaluation mode. In this case this is for the Dropout layers
 model.eval()
