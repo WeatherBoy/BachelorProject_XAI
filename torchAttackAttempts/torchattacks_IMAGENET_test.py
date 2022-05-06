@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[2]:
+# In[5]:
 
 
 import torch
@@ -158,7 +158,7 @@ atks = [
 
 
 
-def saliencyMapSingleImage(model, data):
+def saliencyMapSingleImage(model, data, label):
     
     # Zero all existing gradient
     model.zero_grad()
@@ -170,8 +170,7 @@ def saliencyMapSingleImage(model, data):
     scores = model(data)
     
     # Get the index corresponding to the maximum score and the maximum score itself.
-    score_max_index = scores.argmax()
-    score_max = scores[0,score_max_index]
+    score_max = scores[0,label]
    
     # Compute gradient of score_max with respect to the model
     score_max.backward()
@@ -188,6 +187,8 @@ def intergratedGradSingleImage(model,data,label, trans: bool = False):
     ig = IntegratedGradients(model)
     model.zero_grad()
     attr_ig, delta = ig.attribute(data, target=label.to(DEVICE),baselines=data * 0, return_convergence_delta=True)
+
+    attr_ig, _ = torch.max(attr_ig[0], dim=0,  keepdim=True) # 1 channel
     if trans:
         attr_ig = np.transpose(attr_ig.squeeze().cpu().detach().numpy(), (1, 2, 0))
     
@@ -199,7 +200,7 @@ def advAtkSingleImage(image,label, atk):
     print("\tAdversarial example")
     adv_image = atk(image, label)
     print("\tSaliency map")
-    saliency_grad = saliencyMapSingleImage(model, image)
+    saliency_grad = saliencyMapSingleImage(model, image, label)
     print("\tIntergrated gradient")
     saliency_intgrad = intergratedGradSingleImage(model, image, label)
     
@@ -210,6 +211,7 @@ def advAtkSingleImage(image,label, atk):
 
     # Determind noise: avd = img + noise => noise = avd - img
     noise = adv_image - image
+    noise, _ = torch.max(noise[0], dim=0,  keepdim=True) # 1 channel
     
     # Save info in lists
     adv_dir =  [adv_image, noise, saliency_grad, saliency_intgrad] #['a','b']#[adv_image, noise]
@@ -247,7 +249,7 @@ if train_again == True:
             adv_name.append(atk.__class__.__name__)
         
 
-        torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path+idx+".pth")
+        torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path + str(idx) + ".pth")
         del adv_images, pred_images, adv_name 
 
 
@@ -299,7 +301,7 @@ def plotAttacksTable(atks,adv_images, pred_images):
 
             else: # intergrated gradient
                 
-                ex,_ = torch.max(adv_images[i][j][0], dim=0,  keepdim=True)
+                ex = adv_images[i][j]
                 ex = np.transpose(ex.detach(), (1,2,0))
 
                 # standardize 
@@ -470,3 +472,4 @@ if False:
 
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
+
