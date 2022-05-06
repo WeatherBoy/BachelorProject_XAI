@@ -92,7 +92,7 @@ SCRIPT=$(
 cd ~/jobs/$JOB_NAME
 source ~/BSc_ProjectWork/BachelorVenv/bin/activate
 
-python3.9 $JOB.py
+python3.9 $JOB.py -net seresnet152 -gpu -warm 2
 EOF
 )
 

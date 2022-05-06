@@ -11,10 +11,10 @@ import numpy as np
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f"Using {DEVICE} device")
+print(f"Using {DEVICE} device") 
 
 ARCHITECTURE_PATH = "../network_architectures/seresnet152_architecture.pt"
-MODEL_PATH = "../trainedModels/seresnet152-170-best.pth"
+MODEL_PATH = "../trainedModels/seresnet152-170-best-good.pth"
 ATTACK_PATH = "adversarial_examples_and_accuracies.pth"
 
 #%% Dumb function #################################################################################
@@ -57,8 +57,8 @@ BATCH_SIZE = 128
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 NUM_WORKERS = 1
-CIFAR100_TRAIN_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
-CIFAR100_TRAIN_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
+CIFAR100_TRAIN_MEAN = torch.tensor([0.5070751592371323, 0.48654887331495095, 0.4409178433670343])
+CIFAR100_TRAIN_STD = torch.tensor([0.2673342858792401, 0.2564384629170883, 0.27615047132568404])
 
 # Setting seeds ##############################################
 np.random.seed(RANDOM_SEED)
@@ -78,7 +78,7 @@ test_set = torchvision.datasets.CIFAR100(
     train = False, 
     transform = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(CIFAR100_TRAIN_MEAN, CIFAR100_TRAIN_STD)
+        torchvision.transforms.Normalize(mean = CIFAR100_TRAIN_MEAN, std = CIFAR100_TRAIN_STD)
     ])
     )
 
@@ -123,8 +123,8 @@ if I_Want_Intermediary_Test:
     maxNum = -inf
     minNum = inf
     for i in range(Nsamples):
-        sample_idx = torch.randint(len(trainval_set), size=(1,)).item()
-        img, _ = trainval_set[sample_idx]
+        sample_idx = torch.randint(len(test_set), size=(1,)).item()
+        img, _ = test_set[sample_idx]
         tempMax = torch.max(img)
         tempMin = torch.min(img)
         if maxNum < tempMax:
@@ -158,7 +158,7 @@ def fgsm_attack(image, epsilon, data_grad):
     # Create the perturbed image by adjusting each pixel of the input image
     perturbed_image = image + epsilon*sign_data_grad
     # Adding clipping to maintain [0,1] range
-    perturbed_image = torch.clamp(perturbed_image, 0, 1)
+    perturbed_image = torch.clamp(perturbed_image, -2, 2)
     # Return the perturbed image
     return perturbed_image
 
@@ -169,15 +169,19 @@ def fgsm_attack(image, epsilon, data_grad):
 def test(model, device, test_loader, epsilon, someSeed):
     # Manxi's superior testing function
 
-
+    invert_normalization = torchvision.transforms.Compose([
+        torchvision.transforms.Normalize(mean = [0, 0, 0], std = 1/CIFAR100_TRAIN_STD),
+        torchvision.transforms.Normalize(mean = -1*CIFAR100_TRAIN_MEAN, std = [1,1,1])
+    ])
+        
     # Accuracy counter
     # correct = 0
     adv_examples = []
     adv_imgs = []
     adv_pred_labels = []
     adv_attack_labels = []
-    pred = []
-    gt = []
+    final_predictions = []
+    initial_predictions = []
     
     # Loop over all examples in test set
     for data, target in test_loader:
@@ -224,7 +228,6 @@ def test(model, device, test_loader, epsilon, someSeed):
 
         # Re-classify the perturbed image
         output = model(perturbed_data)
-        # print(f"second output: {output}")
 
         # Check for success
         final_pred = output.max(1, keepdim=True) # get the index of the max log-probability
@@ -232,39 +235,40 @@ def test(model, device, test_loader, epsilon, someSeed):
         final_pred_index = final_pred[1]
         
         adv_ex = perturbed_data.detach()
-        adv_imgs.append(adv_ex)
+        adv_ex_denormalized = invert_normalization(adv_ex)
+        
+        adv_imgs.append(adv_ex_denormalized)
         adv_pred_labels.append(init_pred_index.detach())
         adv_attack_labels.append(final_pred_index.detach())
 
-        pred.append(final_pred_index.flatten().detach().cpu().numpy())
-        gt.append(init_pred_index.flatten().detach().cpu().numpy())
+        final_predictions.append(final_pred_index.flatten().detach().cpu().numpy())
+        initial_predictions.append(init_pred_index.flatten().detach().cpu().numpy())
         
     # Calculate final accuracy for this epsilon
     #final_acc = correct/float(len(test_loader)) # This is for computing the accuracy over batches
     # We usually compute the accuracy over instances
-    pred = np.concatenate(pred, axis=0)
-    gt = np.concatenate(gt, axis=0)
-    correct = np.sum(pred == gt)
-    final_acc = correct / len(gt)
+    final_predictions = np.concatenate(final_predictions, axis=0)
+    initial_predictions = np.concatenate(initial_predictions, axis=0)
+    correct = np.sum(final_predictions == initial_predictions)
+    final_acc = correct / len(initial_predictions)
     
     # np.random.seed(0) # if you would like to make the result repeatable, you should fix the random seed    
     np.random.seed(someSeed)
-    print("the seed:", someSeed)
     adv_imgs = torch.cat(adv_imgs, dim=0).cpu().numpy()
-    num_random_imgs = 5
+    NUM_RANDOM_IMAGES = 5
     
     img_num = adv_imgs.shape[0]
     rndm_imgs_ID = np.arange(img_num)
     np.random.shuffle(rndm_imgs_ID)
-    rndm_imgs_ID = rndm_imgs_ID[:num_random_imgs] # now we randomly pick 5 indices
+    rndm_imgs_ID = rndm_imgs_ID[:NUM_RANDOM_IMAGES] # now we randomly pick 5 indices
         
     adv_imgs = adv_imgs[rndm_imgs_ID, ...]
     adv_pred_labels = torch.cat(adv_pred_labels, dim=0).cpu().numpy()[rndm_imgs_ID, ...]
     adv_attack_labels = torch.cat(adv_attack_labels, dim=0).cpu().numpy()[rndm_imgs_ID, ...]
     
-    adv_examples = [(adv_pred_labels[i, ...][0], adv_attack_labels[i, ...][0], adv_imgs[i, ...]) for i in range(num_random_imgs)]     
+    adv_examples = [(adv_pred_labels[i, ...][0], adv_attack_labels[i, ...][0], adv_imgs[i, ...]) for i in range(NUM_RANDOM_IMAGES)]     
     
-    print("Epsilon: {}\tTest Accuracy = {} / {} = {}".format(round(epsilon.item(), 3), correct, len(gt), final_acc))
+    print(f"Epsilon: {round(epsilon.item(), 3)}\tTest Accuracy = {correct} / {len(initial_predictions)} = {final_acc}")
 
     # Return the accuracy and an adversarial example
     return final_acc, adv_examples
@@ -280,7 +284,7 @@ EPSILON_STEP_SIZE = EPSILONS[1].item()
 accuracies = []
 examples = []
 
-SEED = np.random.randint(low=0, high=2**30)        
+SEED = 42       # np.random.randint(low=0, high=2**30)        
         
 # Run test for each epsilon
 for indx, eps in enumerate(EPSILONS):
