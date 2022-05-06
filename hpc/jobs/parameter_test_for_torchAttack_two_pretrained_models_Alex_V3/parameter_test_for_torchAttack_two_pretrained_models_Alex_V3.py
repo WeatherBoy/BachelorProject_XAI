@@ -157,7 +157,7 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
     # Manxi's superior testing function
 
     # Variable initialization
-    adversarial_images = [ []*NUM_ADV_ATTACKS]
+    adversarial_images_0, adversarial_images_1 = [], []
     adv_attack_labels = [ []*NUM_ADV_ATTACKS]
     final_predictions = [ []*NUM_ADV_ATTACKS]
     init_pred_labels_0, init_pred_labels_1, init_pred_labels_joint = [], [], []
@@ -181,6 +181,7 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         indx_0 = (init_pred_index_0.flatten() == target.flatten()) # B, bool 
         indx_1 = (init_pred_index_1.flatten() == target.flatten()) # B, bool 
         joint_indx = (init_pred_index_0.flatten() == init_pred_index_1.flatten()) # B, bool 
+        # msg(f"index zero shape: {indx_0.shape}\nindex one shape: {indx_1.shape}\njoint index shape: {joint_indx.shape}")
         
         # Calculate the loss
         loss = [F.nll_loss(output[0], target), F.nll_loss(output[1], target)]
@@ -192,7 +193,7 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         loss[0].backward()
 
         # Collect datagrad
-        data_grad_0 = copy.deepcopy(data.grad.data)
+        orig_data_grad_0 = copy.deepcopy(data.grad.data)
         
         # Zero all existing gradients
         model_1.zero_grad()
@@ -201,16 +202,16 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         loss[1].backward()
         
         # Collect datagrad
-        data_grad_1 = copy.deepcopy(data.grad.data)
+        orig_data_grad_1 = copy.deepcopy(data.grad.data)
         
         # NOTE: I put the indexing after the back propagation, 
         # so that "data" appears on the computation graph 
         # (which is used for computing the gradient)
         
-        data_grad_0 = data_grad_0[indx_0, ...]
-        data_grad_1 = data_grad_1[indx_1, ...]
-        data_grad_3 = data_grad_0[joint_indx, ...]
-        data_grad_4 = data_grad_1[joint_indx, ...]
+        data_grad_0 = orig_data_grad_0[indx_0, ...]
+        data_grad_1 = orig_data_grad_1[indx_1, ...]
+        data_grad_3 = orig_data_grad_0[joint_indx, ...]
+        data_grad_4 = orig_data_grad_1[joint_indx, ...]
         if not data_grad_1.size(0):
             continue        
         
@@ -231,16 +232,19 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
             ]
         
         # Re-classify the perturbed image
-        post_atk_output = [model_0(perturbed_data[i]) for i in range(NUM_ADV_ATTACKS)]
+        post_atk_output = [model_0(attacked_im) for attacked_im in perturbed_data]
+        del perturbed_data[0], perturbed_data[1]
         
         # Check for success - # get the index of the max log-probability
-        final_pred = [post_atk_output[i].max(1, keepdim=True) for i in range(NUM_ADV_ATTACKS)]
+        final_pred = [atk_output.max(1, keepdim=True) for atk_output in post_atk_output]
         
         final_pred_index = [final_pred[i][1] for i in range(NUM_ADV_ATTACKS)]
         
-        adv_examps = [perturbed_data[i].detach() for i in range(NUM_ADV_ATTACKS)]
+        adv_examps = [attacked_im.detach() for attacked_im in perturbed_data]
         
-        adv_examps_denormalized = [detransform_func(adv_examps[i]) for i in range(NUM_ADV_ATTACKS)] 
+        adv_examps_denormalized = [detransform_func(adv_examp) for adv_examp in adv_examps]
+        adversarial_images_0.append(adv_examps_denormalized[0]) #NOTE try .cpu here if still too large
+        adversarial_images_1.append(adv_examps_denormalized[1]) #NOTE try .cpu here if still too large
         
         init_pred_labels_0.append(init_pred_index_0.detach())
         init_pred_labels_1.append(init_pred_index_1.detach())
@@ -251,7 +255,6 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         initial_predictions_joint.append(joint_indx.flatten().detach().cpu().numpy())
         
         for i in range(NUM_ADV_ATTACKS):
-            adversarial_images[i].append(adv_examps_denormalized[i])
             adv_attack_labels[i].append(final_pred_index[i].detach())
             final_predictions[i].append(final_pred_index[i].flatten().detach().cpu().numpy())
         
@@ -272,8 +275,8 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
     
     # np.random.seed(0) # if you would like to make the result repeatable, you should fix the random seed    
     np.random.seed(someSeed)
-    adv_imgs_0 = torch.cat(adversarial_images[2], dim=0).cpu().numpy()
-    adv_imgs_1 = torch.cat(adversarial_images[3], dim=0).cpu().numpy()
+    adv_imgs_0 = torch.cat(adversarial_images_0, dim=0).cpu().numpy()
+    adv_imgs_1 = torch.cat(adversarial_images_1, dim=0).cpu().numpy()
     
     NUM_RANDOM_IMAGES = 5
     

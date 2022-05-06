@@ -72,7 +72,7 @@ SCRIPT=$(
 ### -- specify that we want the job to get killed if it exceeds 64 GB per core/slot -- 
 #BSUB -M 64GB
 ### -- set walltime limit: hh:mm -- 
-#BSUB -W 24:00 
+#BSUB -W 2:00 
 ### -- set the email address -- 
 # please uncomment the following line and put in your e-mail address,
 # if you want to receive e-mail notifications on a non-default address
@@ -92,7 +92,7 @@ SCRIPT=$(
 cd ~/jobs/$JOB_NAME
 source ~/BSc_ProjectWork/BachelorVenv/bin/activate
 
-python3.9 $JOB.py -net seresnet152 -gpu -warm 2
+python3.9 $JOB.py
 EOF
 )
 
