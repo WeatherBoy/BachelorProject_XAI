@@ -516,7 +516,7 @@ class DeepFool_noClamp(Attack):
         target_label = hat_L if hat_L < label else hat_L+1
 
         adv_image = image + (1+self.overshoot)*delta
-        #adv_image = torch.clamp(adv_image, min=0, max=1).detach()
+        adv_image = adv_image.detach()#torch.clamp(adv_image, min=0, max=1).detach()
         return (False, target_label, adv_image)
 
     # https://stackoverflow.com/questions/63096122/pytorch-is-it-possible-to-differentiate-a-matrix
