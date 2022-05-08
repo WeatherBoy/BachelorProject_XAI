@@ -10,7 +10,7 @@
 # 
 # And also defining where to put the model weights
 
-# In[5]:
+# In[1]:
 
 
 import torch
@@ -24,6 +24,9 @@ import cv2
 import glob
 from torch.autograd import Variable
 from captum.attr import IntegratedGradients
+from torchattacks.attack import Attack
+from torchattack_noClamp import *
+
 
 train_again = True
 
@@ -32,10 +35,10 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
 # Path to saving the attack
-if train_again == True:
-    atk_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttackImnet/AttacksVGGImnet_"
+if train_again:
+    atk_path = "/zhome/06/a/147115/BSc_venv/BachelorProject_XAI/plottables/AttackImnet/AttacksVGGImnet"
 else:
-    atk_path = "/Users/Alex/Documents/results/plotables/AttacksVGGImnet.pth"
+    atk_path = "/Users/Alex/Documents/results/plotables/AttackImnet/"
 print(f"Saving model in path: {atk_path}")
 
 # Path to data folder
@@ -46,7 +49,7 @@ imagePath = "Imagenet_pics"
 # 
 # Downloading photo folder. First the processing functions. Pre- and deprocessing of the image
 
-# In[3]:
+# In[2]:
 
 
 
@@ -79,7 +82,7 @@ labels = requests.get(labels_link).json()
 # 
 # The model obviously also needs to be defined:
 
-# In[4]:
+# In[3]:
 
 
 #Using VGG-19 pretrained model for image classification
@@ -93,7 +96,7 @@ print()
 
 # Plot each image and their predictions
 
-# In[5]:
+# In[4]:
 
 
 
@@ -128,7 +131,7 @@ for i in range(len(images)):
 
 # # Different attacks on the model
 
-# In[6]:
+# In[5]:
 
 
 atks = [
@@ -156,6 +159,15 @@ atks = [
     DIFGSM(model, eps=8/255, alpha=2/255, steps=100, diversity_prob=0.5, resize_rate=0.9)
 ]
 
+atks_noClamp = [
+    VANILA(model),
+    FGSM_noClamp(model, eps=8/255),
+    BIM_noClamp(model, eps=8/255, alpha=2/255, steps=100),
+    CW_noClamp(model, c=1, lr=0.01, steps=100, kappa=0),
+    PGDL2_noClamp(model, eps=1, alpha=0.2, steps=100),
+    DeepFool_noClamp(model, steps=100),
+    
+]
 
 
 def saliencyMapSingleImage(model, data, label):
@@ -224,11 +236,12 @@ def advAtkSingleImage(image,label, atk):
 
 # Begin attacking!
 
-# In[7]:
+# In[6]:
 
 
-if train_again == True:
-    
+if train_again:
+
+    atk_testidx = [0,4,6,20,1,2]
     
     for idx, im in enumerate(imgs_var):
         print("_"*70 +" Image "+str(idx+1))
@@ -236,11 +249,10 @@ if train_again == True:
         adv_images = []
         pred_images = []
         adv_name = []
-
-        for atk in atks:
+        for atk in atks_noClamp:
             print("_"*35)
             print(atk.__class__.__name__)
-            
+
             # Perform attack on image
             adv_im, adv_pred = advAtkSingleImage(im, label_idx[idx], atk)
 
@@ -249,20 +261,41 @@ if train_again == True:
             adv_name.append(atk.__class__.__name__)
         
 
-        torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path + str(idx) + ".pth")
+        torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path + "_noClamp" + str(idx) + ".pth")
         del adv_images, pred_images, adv_name 
+
+        # print("_"*70 +" Image "+str(idx+1))
+        # # Initialization
+        # adv_images = []
+        # pred_images = []
+        # adv_name = []
+
+        # for atk in atks:
+        #     print("_"*35)
+        #     print(atk.__class__.__name__)
+            
+        #     # Perform attack on image
+        #     adv_im, adv_pred = advAtkSingleImage(im, label_idx[idx], atk)
+
+        #     adv_images.append(adv_im)
+        #     pred_images.append(adv_pred)
+        #     adv_name.append(atk.__class__.__name__)
+        
+
+        # torch.save({"adv_name": adv_name, "adv_images" : adv_images, "pred_images" : pred_images}, atk_path + str(idx) + ".pth")
+        # del adv_images, pred_images, adv_name 
 
 
 # ## Plotting 
 # Function to make plot, with different attackt and their saliency maps
 
-# In[82]:
+# In[ ]:
 
 
-def plotAttacksTable(atks,adv_images, pred_images):
+def plotAttacksTable(atks,adv_images, pred_images,idx, show: bool = False):
     cnt = 0
 
-    fig1 = plt.figure(figsize=(7,5))
+    fig1 = plt.figure(figsize=(7,40))
     fig1.patch.set_facecolor('white')
 
     for i in range(len(atks)):
@@ -281,7 +314,7 @@ def plotAttacksTable(atks,adv_images, pred_images):
                 plt.title(f"{labels[pred_images[i][0].item()]}\nProb: {pred_images[i][1].item():.1f}")#title(pred_images[i][1].item())#
                 plt.imshow(ex)
             elif j == 1: # For the noise 
-                ex,_ = torch.max(adv_images[i][j][0], dim=0,  keepdim=True)
+                ex = adv_images[i][j]
                 ex = np.transpose(ex.detach(), (1,2,0))
 
                 # standardize 
@@ -313,147 +346,178 @@ def plotAttacksTable(atks,adv_images, pred_images):
 
 
             
-    #plt.tight_layout()
-    plt.show()
-    print()
-
-
-# In[83]:
-
-
-
-if train_again == False:
-    # Loading!
-    #attack = torch.load(atk_path,map_location = torch.device(DEVICE))
-    #adv_images = attack["adv_images"]
-    #pred_images = attack["pred_images"]
-    #adv_name = attack["adv_names"]
-    #saliency_im = attack["saliencyMap"]
-    #saliency_im = saliencyMapSingleImage(model, img_variable)
-    plotAttacksTable(atks,adv_images, pred_images)
-
-
-# ### Plot histogram of noise
-
-# In[84]:
-
-
-if train_again == False:
+    plt.tight_layout()
+    if show:
+        plt.show()
+        
+    plt.savefig(atk_path+'IMG_'+str(idx)+"/Atktable.jpg")
+    plt.close(fig1)
     
-    atk_testidx = [3,5,20,0,1]
-
-    fig2 = plt.figure(figsize=(15,25))
+def histTable(adv_images, atk_testidx, img_idx, show: bool = False):
+    fig2 = plt.figure(figsize=(15,20))
     fig2.patch.set_facecolor('white')
+    #fig2.suptitle('Image'+ str(img_idx))
     x_range = [0, 1]
     y_range = [0,800]
-    count = 0
+    count = 1
 
     
-    for i in atk_testidx:
-        count +=1
+    for i in atk_testidx: # attack
+        for j in range(1,len(adv_images[0])): # image type: noise, salgrad, salint
+            
 
-        ex,_ = torch.max(adv_images[i][1][0], dim=0,  keepdim=True)
-        ex = np.transpose(ex.detach(), (1,2,0))
-        # standardize 
-        ex = (ex - ex.min())/(ex.max() -ex.min())
-        #print(ex.min(),ex.max())
-    
-        histogram, bin_edges = np.histogram(ex, bins=1000, range=(x_range[0], x_range[1]))
-        plt.subplot(len(atk_testidx), 2,count)
-        plt.title(atks[i].__class__.__name__)
-        plt.xlabel("grayscale value")
-        plt.ylabel("pixel count")
-        plt.xlim(x_range)  # <- named arguments do not work here
-        plt.ylim(y_range)
-
-        plt.plot(bin_edges[0:-1], histogram) 
-
+            ex = adv_images[i][j]
+            ex = np.transpose(ex.detach(), (1,2,0))
+            # standardize 
+            ex = (ex - ex.min())/(ex.max() -ex.min())
+            #print(ex.min(),ex.max())
         
-    ex = (saliency_im - saliency_im.min())/(saliency_im.max() -saliency_im.min())
+            histogram, bin_edges = np.histogram(ex, bins=1000, range=(x_range[0], x_range[1]))
+            plt.subplot(len(atk_testidx), 3,count)
+            if j == 1: # Noise
+                plt.ylabel(atks[i].__class__.__name__)
+                plt.title('Noise')
 
-    histogram, bin_edges = np.histogram(ex, bins=1000, range=(x_range[0], x_range[1]))
+            elif j == 2: # Sal grad
+                plt.title('Saliency map\ngradient')
+            else: # sal int
+                plt.title('Intergrated \ngradient')
 
-    plt.subplot(len(atk_testidx), 2,count +1)
-    plt.title("Saliency maps")
-    plt.xlabel("grayscale value")
-    plt.ylabel("pixel count")
-    plt.xlim(x_range)  # <- named arguments do not work here
-    plt.ylim(y_range)
-    plt.plot(bin_edges[0:-1], histogram)
+            plt.xlim(x_range)  # <- named arguments do not work here
+            plt.ylim(y_range)
 
-    plt.show()
+            plt.plot(bin_edges[0:-1], histogram) 
+
+            count +=1
+            
+    plt.tight_layout()
+    if show:
+        plt.show()
+    
+    plt.savefig(atk_path+'IMG_'+str(img_idx)+"/histtable.jpg")
+    plt.close(fig2)
+
+def binPlotAttackTable(adv_images, atk_testidx, threshold, thresholdS, idx, show: bool = False):
+    
+    def bin_image(image,threshold):
+        return (image<threshold).int()
+
+    cnt = 1
+
+    fig1 = plt.figure(figsize=(10,15))
+    fig1.patch.set_facecolor('white')
+
+    for count, i in enumerate(atk_testidx): # Attacks
+        for j in range(len(adv_images[0])): # Image
+            
+            plt.subplot(len(atk_testidx),len(adv_images[0]) ,cnt)
+            plt.xticks([], [])
+            plt.yticks([], [])
+
+            if j == 0: # Ad image
+                ex  = deprocess(adv_images[i][j])
+                plt.ylabel(atks[i].__class__.__name__)
+                #plt.title(f"{labels[pred_images[i][0].item()]}\nProb: {pred_images[i][1].item():.1f}")#title(pred_images[i][1].item())#
+                #title(pred_images[i][1].item())#
+                plt.imshow(ex)
+
+            elif j == 1: # Bin noise
+                ex = adv_images[i][j]
+                ex = np.transpose(ex.detach(), (1,2,0))
+
+                # standardize and bin
+                ex = (ex - ex.min())/(ex.max() -ex.min())#adv_images[3][1][0].detach()
+                ex_bin = bin_image(ex,threshold[count])
+
+                plt.imshow(ex_bin,cmap= 'gray')
+
+            elif j == 2: # Saliency map! grad
+                ex = adv_images[i][j][0]
+
+                # standardize 
+                ex = (ex - ex.min())/(ex.max() -ex.min())
+                ex_bin = bin_image(ex,thresholdS[0])
+                
+                plt.imshow(ex_bin, cmap = 'gray')
+                
+            elif j == 3: # Saliency map intergrated gradient 
+                ex = adv_images[i][j]
+                ex = np.transpose(ex.detach(), (1,2,0))
+
+                # standardize and bin
+                ex = (ex - ex.min())/(ex.max() -ex.min())
+                ex_bin = bin_image(ex,thresholdS[1])
+
+                
+                plt.imshow(ex_bin, cmap = 'gray')
+            
+            if (count == 0 ):
+
+                if j== 0:
+                    plt.title(f"Attack im")
+                    plt.ylabel('Clean')
+                if j == 1:
+                    plt.title(f"Binary noise")
+                if j == 2:
+                    plt.title(f'Saliency grad')
+                if j == 3:
+                    plt.title(f'Saliency Int')
+
+            cnt += 1
+
+            
+    plt.tight_layout()
+    if show:
+        plt.show()
+        
+    plt.savefig(atk_path+'IMG_'+str(idx)+"/bin.jpg")
+    plt.close(fig1)
+    
 
 
-# ### Binaries interesting noise
+# The actual plots!
 
 # In[ ]:
 
 
-if train_again == False:
-    def bin_image(image,threshold):
-        return (image<threshold).int()
 
-    cnt = 0
-    count = 0
-    threshold = [0.4,0.4,0.275,1,1] # idx: [3,5,20,0,1]
-    thresholdS = 0.15
+if not train_again: # make saliency map of attacked image, more examples, more saliency maps? kig på TPDG 
+    # Loading!
+    attacks = [torch.load(atk_path+'IMG_'+str(i)+"/AttacksVGGImnet_"+str(i)+".pth",map_location = torch.device(DEVICE)) for i in range(len(images))]
+    
+                                   #        G   G      G         B     B
+    atk_testidx = [0,4,6,20,1,2]   # Clean, CW, PGDL2, DeepFool, FGSM, BIM
 
-    fig1 = plt.figure(figsize=(7,70))
-    fig1.patch.set_facecolor('white')
+    thresholds = [[1,0.35,0.3,0.31,1,1],
+                [1,0.3,0.375,0.435,1,1],
+                [1,0.4,0.4,0.275,1,1],
+                [1,0.4,0.4,0.275,1,1],
+                [1,0.4,0.4,0.275,1,1],
+                [1,0.4,0.4,0.275,1,1]]
 
-    for i in atk_testidx:
-        for j in range(len(adv_images[0])+1):
-            cnt += 1
-
-            plt.subplot(len(atks),len(adv_images[0]) + 1,cnt)
-            plt.xticks([], [])
-            plt.yticks([], [])
-      
+    thresholdsS = [[0.12, 0.455],
+                [0.15, 0.25],
+                [0.12, 0.455],
+                [0.12, 0.455],
+                [0.12, 0.455],
+                [0.12, 0.455]]
             
-           
-            if j == 0: # Noise
-                ex,_ = torch.max(adv_images[i][j+1][0], dim=0,  keepdim=True)
-                ex = np.transpose(ex.detach(), (1,2,0))
-
-                # standardize 
-                ex = (ex - ex.min())/(ex.max() -ex.min())#adv_images[3][1][0].detach()
-            
-                plt.title("Original noise")
-                plt.ylabel(atks[i].__class__.__name__)
-                plt.imshow(ex.max()-ex,cmap= 'gray')
-            elif j == 1: # Bin noise
-                ex,_ = torch.max(adv_images[i][j][0], dim=0,  keepdim=True)
-                ex = np.transpose(ex.detach(), (1,2,0))
-
-                # standardize 
-                ex = (ex - ex.min())/(ex.max() -ex.min())#adv_images[3][1][0].detach()
-                ex_bin = bin_image(ex,threshold[count])
-                plt.title(f"Binary noise {threshold[count]}")
-                plt.imshow(ex_bin,cmap= 'gray')
-
-                count += 1
-
-            else: # Saliency map!
-                plt.title(f'Saliency {thresholdS}')
-
-                ex,_ = torch.max(saliency_im, dim=0,  keepdim=True)
-                ex = np.transpose(ex.detach(), (1,2,0))
-
-                # standardize 
-                ex = (ex - ex.min())/(ex.max() -ex.min())
-                ex_bin = bin_image(ex,thresholdS)
-                plt.imshow(ex_bin, cmap = 'gray')
-
-
-            
-    #plt.tight_layout()
-    plt.show()
-    print() # make saliency map of attacked image, more examples, more saliency maps? kig på TPDG
+    for idx, attack in enumerate(attacks):
+        
+        adv_name = attack["adv_name"]
+        adv_images = attack["adv_images"] # adv_im , noise, sal grad, sal intgrad
+        pred_images = attack["pred_images"]
+        
+        
+        # Plotting of attacks
+        #plotAttacksTable(atks,adv_images, pred_images, idx)
+        #histTable(adv_images, atk_testidx, idx)
+        binPlotAttackTable(adv_images,atk_testidx, thresholds[idx], thresholdsS[idx], idx)
 
 
 # ## Sanity check: noise correctly?
 
-# In[10]:
+# In[ ]:
 
 
 if False:
@@ -472,4 +536,3 @@ if False:
 
         print(atks[i].__class__.__name__, test0.min().item(),test0.max().item())
     
-
