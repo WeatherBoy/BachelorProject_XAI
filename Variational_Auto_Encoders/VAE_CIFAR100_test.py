@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[10]:
+# In[21]:
 
 
 import torch
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[11]:
+# In[22]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[12]:
+# In[23]:
 
 
 BATCH_SIZE = 32 #128
@@ -138,7 +138,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[13]:
+# In[24]:
 
 
 cfg = {
@@ -246,14 +246,42 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[14]:
+# ### Weird classs - warmUp stuff
+
+# In[ ]:
+
+
+from torch.optim.lr_scheduler import _LRScheduler
+
+class WarmUpLR(_LRScheduler):
+    """warmup_training learning rate scheduler
+    Args:
+        optimizer: optimzier(e.g. SGD)
+        total_iters: totoal_iters of warmup phase
+    """
+    def __init__(self, optimizer, total_iters, last_epoch=-1):
+
+        self.total_iters = total_iters
+        super().__init__(optimizer, last_epoch)
+        
+
+    def get_lr(self):
+        """we will use the first m batches, and set the learning
+        rate to base_lr * m / total_iters
+        """
+        return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
+
+
+# In[25]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 5 # hyperparameter
 
-warmup_iteration = 10
+WARMUP_ITERATIONS = 10
+WEIGHT_DECAY = 1e-3
+SGD_MOMENTUM = 0.9
 initial_lr = 1e-3
 warmup_initial_lr = 1e-5
 
@@ -267,14 +295,12 @@ model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 
 #optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay=1e-3)#optim.SGD(model.parameters(), lr= lr)
 optimizer = torch.optim.SGD(model.parameters(), lr=initial_lr, 
-                            momentum=0.9, weight_decay=1e-3)
+                            momentum=SGD_MOMENTUM, weight_decay=WEIGHT_DECAY)
 
-        
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=numEpochs-warmup_iteration)
-lr_scheduler = create_lr_scheduler_with_warmup(scheduler,
-                                               warmup_start_value=warmup_initial_lr,
-                                               warmup_duration=warmup_iteration,
-                                               warmup_end_value=initial_lr)
+iter_per_epoch = len(train_loader)
+warmup_scheduler = WarmUpLR(optimizer, iter_per_epoch * WARMUP_ITERATIONS)        
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=numEpochs-WARMUP_ITERATIONS)
+
 
 
 print(f"hyperparameters are:")
@@ -283,7 +309,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{initial_lr} \nmodel 
 
 # ## Test of dim
 
-# In[15]:
+# In[26]:
 
 
 
@@ -323,7 +349,7 @@ if DimCheck == True:
 
 # ## Checkpointing stuff
 
-# In[16]:
+# In[27]:
 
 
 # It is important that it is initialized to zero
@@ -406,7 +432,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[17]:
+# In[28]:
 
 
 
@@ -422,7 +448,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 
 # Train and testing loops
 
-# In[18]:
+# In[29]:
 
 
 def train_loop(model, loader, loss_fn, optimizer, epoch_num):
@@ -466,12 +492,11 @@ def train_loop(model, loader, loss_fn, optimizer, epoch_num):
             else:
                 
                 print(f"Gadient first layer at step, \nmin: {model.Encoder.features[0].weight.grad.data.min() :>5f} \t max: {model.Encoder.features[0].weight.grad.data.max() :>5f}\n") # FC_logvar.weight.grad 
-        
+        if epoch <= WARMUP_ITERATIONS:
+            warmup_scheduler.step()
         
     train_avg_repo /= num_batches
     train_avg_KLD /= num_batches
-    
-    lr_scheduler.step()#lr_scheduler.step(train_avg_repo + train_avg_KLD) 
 
     return train_avg_repo, train_avg_KLD
 
@@ -502,7 +527,7 @@ def test_loop(model, loader, loss_fn, epoch_num):
 
 # Let the training begin!
 
-# In[19]:
+# In[30]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -510,6 +535,10 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
 
     msg("Will now begin training!")
     for epoch in range(startEpoch,numEpochs):
+        if epoch > WARMUP_ITERATIONS:
+            # TODO make sure it matches scheduler
+            scheduler.step()
+            
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, epoch +1)
         val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, epoch + 1)
@@ -602,5 +631,3 @@ x_hat, mean, var = model(x)
 
 
 batch_show = 7
-
-
