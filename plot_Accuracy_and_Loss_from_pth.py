@@ -26,7 +26,8 @@ try:
     losses = checkpoint['loss']
 except KeyError:
     accuracies = checkpoint['accuracies']
-    losses = checkpoint['losses']    
+    losses = checkpoint['losses']  
+      
 
 print(f"max accuracy (test): {max(accuracies[0][1:])} \nmin loss (test): {min(losses[0][1:])}")
 num_epochs = len(accuracies[0])
@@ -50,3 +51,15 @@ ax2.set_ylabel("AVG loss")
 
 tikzplotlib.save("test_tikz.tex")
 plt.show()
+
+try:
+    learning_rates = checkpoint["learning_rate"]
+    num_LRs = len(learning_rates)
+    plt.figure(figsize=(14,4))
+    plt.plot(xVals[:130], learning_rates[:130])
+    #plt.title(f"Learning rates over {num_LRs} epochs.")
+    plt.xlabel("Epochs")
+    plt.ylabel("Learning rate")
+    plt.show()
+except:
+    print("No learning rates exist!")

@@ -162,6 +162,8 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
     final_predictions = [ []*NUM_ADV_ATTACKS]
     init_pred_labels_0, init_pred_labels_1, init_pred_labels_joint = [], [], []
     initial_predictions_0,  initial_predictions_1, initial_predictions_joint = [], [], []
+
+    cnt = 0
     
     # Loop over all examples in test set
     for data, target in test_loader:
@@ -243,8 +245,8 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         adv_examps = [attacked_im.detach() for attacked_im in perturbed_data]
         
         adv_examps_denormalized = [detransform_func(adv_examp) for adv_examp in adv_examps]
-        adversarial_images_0.append(adv_examps_denormalized[0]) #NOTE try .cpu here if still too large
-        adversarial_images_1.append(adv_examps_denormalized[1]) #NOTE try .cpu here if still too large
+        adversarial_images_0.append(adv_examps_denormalized[0].cpu())
+        adversarial_images_1.append(adv_examps_denormalized[1].cpu()) 
         
         init_pred_labels_0.append(init_pred_index_0.detach())
         init_pred_labels_1.append(init_pred_index_1.detach())
@@ -257,6 +259,8 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         for i in range(NUM_ADV_ATTACKS):
             adv_attack_labels[i].append(final_pred_index[i].detach())
             final_predictions[i].append(final_pred_index[i].flatten().detach().cpu().numpy())
+        
+        print(f"iteration: {cnt + 1}. Number of images processed: {(cnt + 1)*BATCH_SIZE}")
         
     # Calculate final accuracy for this epsilon
     #final_acc = correct/float(len(test_loader)) # This is for computing the accuracy over batches
