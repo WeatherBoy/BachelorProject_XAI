@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[3]:
+# In[2]:
 
 
 import torch
@@ -15,6 +15,7 @@ from torch import nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, random_split
+from ignite.handlers.param_scheduler import create_lr_scheduler_with_warmup 
 import numpy as np
 from torch import optim
 import os
@@ -250,9 +251,13 @@ class Model(nn.Module):
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 10 # hyperparameter
-lr = 1e-4
-numEpochs = 200
+latent_dim = 5 # hyperparameter
+
+warmup_iteration = 10
+initial_lr = 1e-3
+warmup_initial_lr = 1e-5
+
+numEpochs = 100
 modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
@@ -261,9 +266,16 @@ decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 
 #optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay=1e-3)#optim.SGD(model.parameters(), lr= lr)
-optimizer = torch.optim.SGD(model.parameters(), lr=lr, 
+optimizer = torch.optim.SGD(model.parameters(), lr=initial_lr, 
                             momentum=0.9, weight_decay=1e-3)
+
+        
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min',factor = 1/20, patience = 5)
+lr_scheduler = create_lr_scheduler_with_warmup(scheduler,
+                                               warmup_start_value=warmup_initial_lr,
+                                               warmup_duration=warmup_iteration,
+                                               warmup_end_value=initial_lr)
+
 
 print(f"hyperparameters are:")
 msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
@@ -475,8 +487,9 @@ def test_loop(model, loader, loss_fn, epoch_num):
             x = x.to(DEVICE)
 
             # Compute loss
+            KLD_scale = np.exp((epoch_num - numEpochs)/4)
             x_hat, mean, log_var = model(x)
-            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, epoch_num)
+            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
 
             val_avg_repo += loss_repo.item()
             val_avg_KLD += loss_KLD.item()
@@ -532,9 +545,9 @@ else:
 # In[ ]:
 
 
-# my_model_path = "/Users/Alex/Documents/results/savedModels/VAE_CIFAR100.pth"
-# checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
-# model.load_state_dict(checkpoint['model_state_dict'])
+my_model_path = "/Users/Alex/Documents/results/savedModels/VAE_CIFAR100.pth"
+checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
+model.load_state_dict(checkpoint['model_state_dict'])
 
 
 # In[ ]:
@@ -589,6 +602,3 @@ x_hat, mean, var = model(x)
 
 
 batch_show = 7
-
-#batchplot(batch_show,x)
-
