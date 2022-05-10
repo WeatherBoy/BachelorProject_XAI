@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[2]:
+# In[10]:
 
 
 import torch
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[4]:
+# In[11]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[5]:
+# In[12]:
 
 
 BATCH_SIZE = 32 #128
@@ -138,7 +138,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[6]:
+# In[13]:
 
 
 cfg = {
@@ -246,7 +246,7 @@ class Model(nn.Module):
 
 # ## Defining Model and hyperparameters
 
-# In[7]:
+# In[14]:
 
 
 
@@ -270,7 +270,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=initial_lr,
                             momentum=0.9, weight_decay=1e-3)
 
         
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,'min',factor = 1/20, patience = 5)
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=numEpochs-warmup_iteration)
 lr_scheduler = create_lr_scheduler_with_warmup(scheduler,
                                                warmup_start_value=warmup_initial_lr,
                                                warmup_duration=warmup_iteration,
@@ -278,12 +278,12 @@ lr_scheduler = create_lr_scheduler_with_warmup(scheduler,
 
 
 print(f"hyperparameters are:")
-msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
+msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{initial_lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
 
 
 # ## Test of dim
 
-# In[8]:
+# In[15]:
 
 
 
@@ -323,7 +323,7 @@ if DimCheck == True:
 
 # ## Checkpointing stuff
 
-# In[9]:
+# In[16]:
 
 
 # It is important that it is initialized to zero
@@ -406,7 +406,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[10]:
+# In[17]:
 
 
 
@@ -422,7 +422,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 
 # Train and testing loops
 
-# In[11]:
+# In[18]:
 
 
 def train_loop(model, loader, loss_fn, optimizer, epoch_num):
@@ -470,8 +470,8 @@ def train_loop(model, loader, loss_fn, optimizer, epoch_num):
         
     train_avg_repo /= num_batches
     train_avg_KLD /= num_batches
-
-    scheduler.step(train_avg_repo + train_avg_KLD) 
+    
+    lr_scheduler.step()#lr_scheduler.step(train_avg_repo + train_avg_KLD) 
 
     return train_avg_repo, train_avg_KLD
 
@@ -502,7 +502,7 @@ def test_loop(model, loader, loss_fn, epoch_num):
 
 # Let the training begin!
 
-# In[12]:
+# In[19]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -602,3 +602,5 @@ x_hat, mean, var = model(x)
 
 
 batch_show = 7
+
+
