@@ -500,7 +500,7 @@ def train_loop(model, loader, loss_fn, optimizer):
 
     return train_avg_repo, train_avg_KLD
 
-def test_loop(model, loader, loss_fn, KLD_scale):
+def test_loop(model, loader, loss_fn):
     model.eval()
 
     num_batches = len(loader)
