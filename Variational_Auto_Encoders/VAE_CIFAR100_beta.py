@@ -451,7 +451,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 # In[32]:
 
 
-def train_loop(model, loader, loss_fn, optimizer, epoch_num):
+def train_loop(model, loader, loss_fn, optimizer):
     model.train()
 
     size = len(loader.dataset)
@@ -500,7 +500,7 @@ def train_loop(model, loader, loss_fn, optimizer, epoch_num):
 
     return train_avg_repo, train_avg_KLD
 
-def test_loop(model, loader, loss_fn, epoch_num):
+def test_loop(model, loader, loss_fn, KLD_scale):
     model.eval()
 
     num_batches = len(loader)
@@ -512,7 +512,7 @@ def test_loop(model, loader, loss_fn, epoch_num):
             x = x.to(DEVICE)
 
             # Compute loss
-            KLD_scale = np.exp((epoch_num - numEpochs)/4)
+            KLD_scale = latent_dim/torch.numel(x)
             x_hat, mean, log_var = model(x)
             loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
 
@@ -538,10 +538,9 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         if epoch > WARMUP_ITERATIONS:
             # TODO make sure it matches scheduler
             scheduler.step()
-            
         print(f"Epoch {epoch +1}\n----------------------------------")
-        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, epoch +1)
-        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, epoch + 1)
+        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer)
+        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function)
 
         # Save information for plotting
         loss_train[0,epoch], loss_train[1,epoch]    = train_avg_repo, train_avg_KLD
@@ -567,68 +566,4 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
-
-
-# # Plot reproduction 
-
-# In[ ]:
-
-
-my_model_path = "Users/Alex/Documents/results/savedModel/VAE_CIFAR100.pth"
-checkpoint = torch.load(my_model_path, map_location=torch.device(DEVICE))
-model.load_state_dict(checkpoint['model_state_dict'])
-
-
-# In[ ]:
-
-
-
-# Set the model in evaluation mode. In this case this is for the Dropout layers
-model.eval()
-
-
-import matplotlib.pyplot as plt
-model.eval()
-
-def batchplot(batch_show,image):
-# How many images from the batch will you show?
-
-
-    def imshow(img):
-        #img = img / 2 + 0.5     # unnormalize
-            npimg = img.numpy()
-            plt.imshow(np.transpose(npimg, (1, 2, 0)))
-            #plt.show()
-
-    # Model reconstruction
-    x_hat, _, _ = model(image)
-
-    fig1=plt.figure(figsize=(17,4))
-    fig1.patch.set_facecolor('white')
-    for i in range(batch_show):
-
-        plt.subplot(2,batch_show,i+1)
-        imshow(image[i])
-        plt.xticks([],[])
-        plt.yticks([],[])
-        plt.title(classes[labels[i].item()])
-        if i == 0:
-            plt.ylabel('Original image')
-        
-        plt.subplot(2,batch_show,batch_show+ i+1)
-        imshow(x_hat[i].detach())
-        plt.xticks([],[])
-        plt.yticks([],[])
-        if i == 0:
-            plt.ylabel('Reproduced image')
-    pass
-
-
-dataiter = iter(test_loader)
-x, labels = dataiter.next()
-
-x_hat, mean, var = model(x)
-
-
-batch_show = 7
 
