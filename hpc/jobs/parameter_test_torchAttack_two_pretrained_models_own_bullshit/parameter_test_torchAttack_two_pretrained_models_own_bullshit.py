@@ -7,6 +7,7 @@ import torch
 import torchvision
 import torch.nn.functional as F
 import copy
+from utils import get_network
 
 import numpy as np
 
@@ -14,8 +15,7 @@ import numpy as np
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
-ARCHITECTURE_PATH_1 = "../network_architectures/seresnet152_architecture.pt"
-ARCHITECTURE_PATH_2 = "../network_architectures/seresnet152_architecture.pt"
+NETWORK_ARCHITECTURE = "seresnet152"
 MODEL_PATH_1 = "../trainedModels/seresnet152-170-best-good.pth"
 MODEL_PATH_2 = "../trainedModels/seresnet152-148-best-bad.pth"
 ATTACK_PATH = "adversarial_examples_and_accuracies.pth"
@@ -122,8 +122,8 @@ if I_Want_Intermediary_Test:
 
 #%% Loading the model #############################################################################
 
-model_1 = torch.jit.load(ARCHITECTURE_PATH_1).to(DEVICE)
-model_2 = torch.jit.load(ARCHITECTURE_PATH_2).to(DEVICE)
+model_1 = copy.deepcopy(get_network(NETWORK_ARCHITECTURE).to(DEVICE))
+model_2 = copy.deepcopy(get_network(NETWORK_ARCHITECTURE).to(DEVICE))
 checkpoint_1 = torch.load(MODEL_PATH_1, map_location=torch.device(DEVICE))
 checkpoint_2 = torch.load(MODEL_PATH_2, map_location=torch.device(DEVICE))
 model_1.load_state_dict(checkpoint_1)
@@ -158,10 +158,10 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
 
     # Variable initialization
     adversarial_images_0, adversarial_images_1 = [], []
-    adv_attack_labels = [ []*NUM_ADV_ATTACK_ARRAYS]
-    final_predictions = [ []*NUM_ADV_ATTACK_ARRAYS]
-    init_pred_labels_0, init_pred_labels_1, init_pred_labels_joint = [], [], []
-    initial_predictions_0,  initial_predictions_1, initial_predictions_joint = [], [], []
+    adv_attack_labels = [ [] for _ in range(NUM_ADV_ATTACK_ARRAYS) ]
+    final_predictions = [ [] for _ in range(NUM_ADV_ATTACK_ARRAYS) ]
+    init_pred_labels_joint = []
+    initial_predictions_0,  initial_predictions_1 = [], []
 
     cnt = 0
     
@@ -212,8 +212,8 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         
         data_grad_0 = orig_data_grad_0[indx_0, ...]
         data_grad_1 = orig_data_grad_1[indx_1, ...]
-        data_grad_3 = orig_data_grad_0[joint_indx, ...]
-        data_grad_4 = orig_data_grad_1[joint_indx, ...]
+        data_grad_2 = orig_data_grad_0[joint_indx, ...]
+        data_grad_3 = orig_data_grad_1[joint_indx, ...]
         if not data_grad_1.size(0):
             continue        
         
@@ -229,8 +229,8 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         perturbed_data = [
             fgsm_attack(data_0, epsilon, data_grad_0),
             fgsm_attack(data_1, epsilon, data_grad_1),
+            fgsm_attack(joint_data, epsilon, data_grad_2),
             fgsm_attack(joint_data, epsilon, data_grad_3),
-            fgsm_attack(joint_data, epsilon, data_grad_4),
             ]
         
         # Re-classify the perturbed image
@@ -248,14 +248,12 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         adversarial_images_0.append(adv_examps_denormalized[0].cpu())
         adversarial_images_1.append(adv_examps_denormalized[1].cpu()) 
         
-        init_pred_labels_0.append(init_pred_index_0.detach())
-        init_pred_labels_1.append(init_pred_index_1.detach())
-        init_pred_labels_joint.append(joint_indx.detatch())
+        init_pred_labels_joint.append(joint_indx)
         
         initial_predictions_0.append(init_pred_index_0.flatten().detach().cpu().numpy())
         initial_predictions_1.append(init_pred_index_1.flatten().detach().cpu().numpy())
-        initial_predictions_joint.append(joint_indx.flatten().detach().cpu().numpy())
-        
+        print(f"length of avd_attack_labels: {len(adv_attack_labels)}")
+        print(f"length of final_pred_index: {len(final_pred_index)}")
         for i in range(NUM_ADV_ATTACK_ARRAYS):
             adv_attack_labels[i].append(final_pred_index[i].detach())
             final_predictions[i].append(final_pred_index[i].flatten().detach().cpu().numpy())
@@ -265,12 +263,11 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
     # Calculate final accuracy for this epsilon
     #final_acc = correct/float(len(test_loader)) # This is for computing the accuracy over batches
     # We usually compute the accuracy over instances
-    for i in range(NUM_ADV_ATTACK_ARRAYS):
-        final_predictions[i] = np.concatenate(final_predictions[i], axis=0)
+    for indx, prediction in enumerate(final_predictions):
+        final_predictions[indx] = np.concatenate(prediction, axis=0)
     
     initial_predictions_0 = np.concatenate(initial_predictions_0, axis=0)
     initial_predictions_1 = np.concatenate(initial_predictions_1, axis=0)
-    initial_predictions_joint = np.concatenate(initial_predictions_joint, axis=0)
     
     correct_0 = np.sum(final_predictions[0] == initial_predictions_0)
     correct_1 = np.sum(final_predictions[1] == initial_predictions_1)

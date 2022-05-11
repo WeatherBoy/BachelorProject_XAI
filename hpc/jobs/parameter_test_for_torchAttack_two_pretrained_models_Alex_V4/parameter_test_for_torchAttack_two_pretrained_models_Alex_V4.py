@@ -3,10 +3,12 @@
 
 #%% Imports and initialization ####################################################################
 
+from requests import get
 import torch
 import torchvision
 import torch.nn.functional as F
 import copy
+import sys
 
 import numpy as np
 
@@ -14,10 +16,10 @@ import numpy as np
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
+ARCHITECTURE_PATH_0 = "../network_architectures/seresnet152_architecture.pt"
 ARCHITECTURE_PATH_1 = "../network_architectures/seresnet152_architecture.pt"
-ARCHITECTURE_PATH_2 = "../network_architectures/seresnet152_architecture.pt"
-MODEL_PATH_1 = "../trainedModels/seresnet152-170-best-good.pth"
-MODEL_PATH_2 = "../trainedModels/seresnet152-148-best-bad.pth"
+MODEL_PATH_0 = "../trainedModels/seresnet152-170-best-good.pth"
+MODEL_PATH_1 = "../trainedModels/seresnet152-148-best-bad.pth"
 ATTACK_PATH = "adversarial_examples_and_accuracies.pth"
 
 #%% Dumb function #################################################################################
@@ -117,21 +119,6 @@ if I_Want_Intermediary_Test:
             minNum = tempMin
 
     msg(f"Smallest in number in these images: {minNum}\n Greatest number in sample images: {maxNum}")
-    
-
-
-#%% Loading the model #############################################################################
-
-model_1 = torch.jit.load(ARCHITECTURE_PATH_1).to(DEVICE)
-model_2 = torch.jit.load(ARCHITECTURE_PATH_2).to(DEVICE)
-checkpoint_1 = torch.load(MODEL_PATH_1, map_location=torch.device(DEVICE))
-checkpoint_2 = torch.load(MODEL_PATH_2, map_location=torch.device(DEVICE))
-model_1.load_state_dict(checkpoint_1)
-model_2.load_state_dict(checkpoint_2)
-
-# Set the model in evaluation mode. In this case this is for the Dropout layers
-model_1.eval(); model_2.eval()
-msg("Loaded models and put in evaluation-mode.")
 
 
 #%% FGSM Attack ###################################################################################
@@ -153,7 +140,37 @@ def fgsm_attack(image, epsilon, data_grad):
 #%% Testing function ##############################################################################
 # This is a testing function written by the peeps at pyTorch. It seems like it does a lot, I am not entirely sure what everything is though.
 
-def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_func = lambda x: x):
+def get_joint_indices(model_0, model_1, device, test_loader):
+    cnt = 1
+    joint_indices = []
+    
+    for data, target in test_loader:
+
+        # Send the data and label to the device
+        data, target = data.to(device), target.to(device)
+
+        # Set requires_grad attribute of tensor. Important for Attack
+        data.requires_grad = True
+
+        # Forward pass the data through the model
+        output = [model_0(data), model_1(data)]
+        
+        _, init_pred_index_0 = output[0].max(1, keepdim=True) # get the index of the max log-probability
+        _, init_pred_index_1 = output[1].max(1, keepdim=True) # get the index of the max log-probability
+        
+        joint_indx = (init_pred_index_0.flatten() == init_pred_index_1.flatten()) # B, bool
+        joint_indices.append(joint_indx)
+        print(f"We made it this far at iteration: {cnt}")
+    
+    return joint_indices
+
+
+def test_and_adv_examps_for_joint_indices(model, device, test_loader, epsilon, someSeed, detransform_func = lambda x: x):
+    
+    return "the fuck"
+        
+    
+def test(_0, model_1, device, test_loader, epsilon, someSeed, detransform_func = lambda x: x):
     # Manxi's superior testing function
 
     # Variable initialization
@@ -185,7 +202,7 @@ def test(model_0, model_1, device, test_loader, epsilon, someSeed, detransform_f
         joint_indx = (init_pred_index_0.flatten() == init_pred_index_1.flatten()) # B, bool 
         # msg(f"index zero shape: {indx_0.shape}\nindex one shape: {indx_1.shape}\njoint index shape: {joint_indx.shape}")
         
-        # Calculate the losso
+        # Calculate the loss
         loss = [F.nll_loss(output[0], target), F.nll_loss(output[1], target)]
 
         # Zero all existing gradients
@@ -326,8 +343,29 @@ accuracies_2 = []
 examples_1 = []
 examples_2 = []
 
-# RANDOM_SEED = np.random.randint(low=0, high=2**30) Relevant when testing this function, not when getting results     
-        
+# RANDOM_SEED = np.random.randint(low=0, high=2**30) Relevant when testing this function, not when getting results   
+#%% Loading the model #############################################################################
+
+model_0 = torch.jit.load(ARCHITECTURE_PATH_0).to(DEVICE)
+model_1 = torch.jit.load(ARCHITECTURE_PATH_1).to(DEVICE)
+checkpoint_0 = torch.load(MODEL_PATH_0, map_location=torch.device(DEVICE))
+checkpoint_1 = torch.load(MODEL_PATH_1, map_location=torch.device(DEVICE))
+model_0.load_state_dict(checkpoint_0)
+model_1.load_state_dict(checkpoint_1)
+
+model_0.eval(); model_1.eval()
+
+# Set the model in evaluation mode. In this case this is for the Dropout layers
+msg("Loaded models and put in eval mode.")
+
+
+
+joint_indices = get_joint_indices(model_0 = model_0, model_1 = model_1, device = DEVICE, test_loader = test_loader)
+# we try to empty the cache
+torch.cuda.empty_cache()
+msg("succesfully emptied the cache and got this far..")
+sys.exit()
+
 # Run test for each epsilon
 for indx, eps in enumerate(EPSILONS):
     print(f"We get this far: {indx}")

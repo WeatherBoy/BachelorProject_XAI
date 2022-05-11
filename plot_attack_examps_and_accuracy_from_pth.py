@@ -14,7 +14,7 @@ save_model_path2 = good_dir + "seresnet152_good_cifar100_ADV_EXAMPS" + ".pth"
 save_model_path3 = good_dir + "seresnet152_bad_cifar100_ADV_EXAMPS" + ".pth"
 
 #%% Getting the data ##############################################################################
-dict_thingy = torch.load(save_model_path3, map_location=torch.device(DEVICE))
+dict_thingy = torch.load(save_model_path2, map_location=torch.device(DEVICE))
 EPSILONS = dict_thingy["epsilons"]
 EPSILON_STEP_SIZE = EPSILONS[1]
 accuracies = dict_thingy["accuracies"]
@@ -42,7 +42,7 @@ plt.ylabel("Accuracy")
 plt.show()
 
 # Plot several examples of adversarial samples at each epsilon
-
+# reshaped_snails = []
 cnt = 0
 plt.figure(figsize=(8,10))
 for i in range(len(EPSILONS)):
@@ -57,6 +57,8 @@ for i in range(len(EPSILONS)):
         
         # CIFAR is complicated so we need to reshape and normalize..
         reshaped_ex = np.transpose(ex, (1, 2, 0))
+        # if j == 3:
+        #    reshaped_snails.append(reshaped_ex)
         #print(f"min: {min(reshaped_ex.flatten())}")
         #normalised_ex = reshaped_ex / 2     # unnormalize
         #print(f"max: {max(reshaped_ex.flatten())}")
@@ -65,3 +67,6 @@ for i in range(len(EPSILONS)):
         plt.imshow(reshaped_ex)
 plt.tight_layout()
 plt.show()
+
+# SNAIL_PATH = "reshaped_snails.pth"
+# torch.save(reshaped_snails, SNAIL_PATH)
