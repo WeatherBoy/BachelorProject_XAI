@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[12]:
+# In[23]:
 
 
 import torch
@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_linVGG16.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_linVGG16.pth"
+save_model_path = "../trainedModels/VAE_beta_CIFAR100.pth"
+save_loss_path = "../plottables/VAE_beta_CIFAR100.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[13]:
+# In[24]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[14]:
+# In[25]:
 
 
 BATCH_SIZE = 32 #128
@@ -138,7 +138,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[15]:
+# In[26]:
 
 
 cfg = {
@@ -248,7 +248,7 @@ class Model(nn.Module):
 
 # ### Weird classs - warmUp stuff
 
-# In[16]:
+# In[27]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -272,7 +272,7 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[17]:
+# In[28]:
 
 
 
@@ -286,7 +286,7 @@ initial_lr = 1e-3
 warmup_initial_lr = 1e-5
 
 numEpochs = 100
-modeltype = 'VGG16'
+modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim).to(DEVICE)
 decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size).to(DEVICE)
@@ -309,7 +309,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{initial_lr} \nmodel 
 
 # ## Test of dim
 
-# In[18]:
+# In[29]:
 
 
 
@@ -349,7 +349,7 @@ if DimCheck == True:
 
 # ## Checkpointing stuff
 
-# In[19]:
+# In[30]:
 
 
 # It is important that it is initialized to zero
@@ -432,7 +432,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[20]:
+# In[31]:
 
 
 
@@ -448,10 +448,10 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 
 # Train and testing loops
 
-# In[21]:
+# In[32]:
 
 
-def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
+def train_loop(model, loader, loss_fn, optimizer):
     model.train()
 
     size = len(loader.dataset)
@@ -467,6 +467,7 @@ def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
         x_hat, mean, log_var = model(x)
 
         # Compute loss
+        KLD_scale = latent_dim/torch.numel(x)
         loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
         loss = loss_repo + loss_KLD
 
@@ -499,7 +500,7 @@ def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
 
     return train_avg_repo, train_avg_KLD
 
-def test_loop(model, loader, loss_fn, KLD_scale):
+def test_loop(model, loader, loss_fn):
     model.eval()
 
     num_batches = len(loader)
@@ -511,6 +512,7 @@ def test_loop(model, loader, loss_fn, KLD_scale):
             x = x.to(DEVICE)
 
             # Compute loss
+            KLD_scale = latent_dim/torch.numel(x)
             x_hat, mean, log_var = model(x)
             loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
 
@@ -525,7 +527,7 @@ def test_loop(model, loader, loss_fn, KLD_scale):
 
 # Let the training begin!
 
-# In[23]:
+# In[33]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -536,10 +538,9 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         if epoch > WARMUP_ITERATIONS:
             # TODO make sure it matches scheduler
             scheduler.step()
-        KLD_scale = (epoch + 1)/np.power(numEpochs,2)
         print(f"Epoch {epoch +1}\n----------------------------------")
-        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, KLD_scale)
-        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, KLD_scale)
+        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer)
+        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function)
 
         # Save information for plotting
         loss_train[0,epoch], loss_train[1,epoch]    = train_avg_repo, train_avg_KLD
