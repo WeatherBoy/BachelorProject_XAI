@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[21]:
+# In[1]:
 
 
 import torch
@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100.pth"
-save_loss_path = "../plottables/VAE_CIFAR100.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_lin.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_lin.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[22]:
+# In[2]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[23]:
+# In[3]:
 
 
 BATCH_SIZE = 32 #128
@@ -138,7 +138,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[24]:
+# In[4]:
 
 
 cfg = {
@@ -248,7 +248,7 @@ class Model(nn.Module):
 
 # ### Weird classs - warmUp stuff
 
-# In[ ]:
+# In[5]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -272,7 +272,7 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[25]:
+# In[6]:
 
 
 
@@ -451,7 +451,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 # In[29]:
 
 
-def train_loop(model, loader, loss_fn, optimizer, epoch_num):
+def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
     model.train()
 
     size = len(loader.dataset)
@@ -467,7 +467,6 @@ def train_loop(model, loader, loss_fn, optimizer, epoch_num):
         x_hat, mean, log_var = model(x)
 
         # Compute loss
-        KLD_scale = np.exp((epoch_num - numEpochs)/4)
         loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
         loss = loss_repo + loss_KLD
 
@@ -500,7 +499,7 @@ def train_loop(model, loader, loss_fn, optimizer, epoch_num):
 
     return train_avg_repo, train_avg_KLD
 
-def test_loop(model, loader, loss_fn, epoch_num):
+def test_loop(model, loader, loss_fn, KLD_scale):
     model.eval()
 
     num_batches = len(loader)
@@ -512,7 +511,6 @@ def test_loop(model, loader, loss_fn, epoch_num):
             x = x.to(DEVICE)
 
             # Compute loss
-            KLD_scale = np.exp((epoch_num - numEpochs)/4)
             x_hat, mean, log_var = model(x)
             loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
 
@@ -527,7 +525,7 @@ def test_loop(model, loader, loss_fn, epoch_num):
 
 # Let the training begin!
 
-# In[30]:
+# In[ ]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -538,10 +536,10 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         if epoch > WARMUP_ITERATIONS:
             # TODO make sure it matches scheduler
             scheduler.step()
-            
+        KLD_scale = (epoch + 1)/numEpochs^3
         print(f"Epoch {epoch +1}\n----------------------------------")
-        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, epoch +1)
-        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, epoch + 1)
+        train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, KLD_scale)
+        val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, KLD_scale)
 
         # Save information for plotting
         loss_train[0,epoch], loss_train[1,epoch]    = train_avg_repo, train_avg_KLD
@@ -568,66 +566,3 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
 else:
     msg("Have already trained this model once!")
 
-
-# # Plot reproduction 
-
-# In[ ]:
-
-
-my_model_path = "/Users/Alex/Documents/results/savedModels/VAE_CIFAR100.pth"
-checkpoint = torch.load(save_model_path, map_location=torch.device(DEVICE))
-model.load_state_dict(checkpoint['model_state_dict'])
-
-
-# In[ ]:
-
-
-
-# Set the model in evaluation mode. In this case this is for the Dropout layers
-model.eval()
-
-
-import matplotlib.pyplot as plt
-model.eval()
-
-def batchplot(batch_show,image):
-# How many images from the batch will you show?
-
-
-    def imshow(img):
-        #img = img / 2 + 0.5     # unnormalize
-            npimg = img.numpy()
-            plt.imshow(np.transpose(npimg, (1, 2, 0)))
-            #plt.show()
-
-    # Model reconstruction
-    x_hat, _, _ = model(image)
-
-    fig1=plt.figure(figsize=(17,4))
-    fig1.patch.set_facecolor('white')
-    for i in range(batch_show):
-
-        plt.subplot(2,batch_show,i+1)
-        imshow(image[i])
-        plt.xticks([],[])
-        plt.yticks([],[])
-        plt.title(classes[labels[i].item()])
-        if i == 0:
-            plt.ylabel('Original image')
-        
-        plt.subplot(2,batch_show,batch_show+ i+1)
-        imshow(x_hat[i].detach())
-        plt.xticks([],[])
-        plt.yticks([],[])
-        if i == 0:
-            plt.ylabel('Reproduced image')
-    pass
-
-
-dataiter = iter(test_loader)
-x, labels = dataiter.next()
-
-x_hat, mean, var = model(x)
-
-
-batch_show = 7
