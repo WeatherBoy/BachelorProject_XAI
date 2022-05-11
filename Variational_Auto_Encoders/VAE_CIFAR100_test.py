@@ -288,8 +288,8 @@ warmup_initial_lr = 1e-5
 numEpochs = 100
 modeltype = 'VGG11'
 
-encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim)
-decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size)
+encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim).to(DEVICE)
+decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size).to(DEVICE)
 
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 
