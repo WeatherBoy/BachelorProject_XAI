@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[1]:
+# In[12]:
 
 
 import torch
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[2]:
+# In[13]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[3]:
+# In[14]:
 
 
 BATCH_SIZE = 32 #128
@@ -138,7 +138,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[4]:
+# In[15]:
 
 
 cfg = {
@@ -248,7 +248,7 @@ class Model(nn.Module):
 
 # ### Weird classs - warmUp stuff
 
-# In[5]:
+# In[16]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -272,7 +272,7 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[6]:
+# In[17]:
 
 
 
@@ -309,7 +309,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{initial_lr} \nmodel 
 
 # ## Test of dim
 
-# In[26]:
+# In[18]:
 
 
 
@@ -349,7 +349,7 @@ if DimCheck == True:
 
 # ## Checkpointing stuff
 
-# In[27]:
+# In[19]:
 
 
 # It is important that it is initialized to zero
@@ -432,7 +432,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[28]:
+# In[20]:
 
 
 
@@ -448,7 +448,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 
 # Train and testing loops
 
-# In[29]:
+# In[21]:
 
 
 def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
@@ -525,7 +525,7 @@ def test_loop(model, loader, loss_fn, KLD_scale):
 
 # Let the training begin!
 
-# In[ ]:
+# In[23]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -536,7 +536,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         if epoch > WARMUP_ITERATIONS:
             # TODO make sure it matches scheduler
             scheduler.step()
-        KLD_scale = (epoch + 1)/numEpochs^3
+        KLD_scale = (epoch + 1)/np.power(numEpochs,3)
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, KLD_scale)
         val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, KLD_scale)
