@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_linVGG16.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_linVGG16.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_linVGG19.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_linVGG19.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -286,7 +286,7 @@ initial_lr = 1e-3
 warmup_initial_lr = 1e-5
 
 numEpochs = 100
-modeltype = 'VGG16'
+modeltype = 'VGG19'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim).to(DEVICE)
 decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size).to(DEVICE)
@@ -536,7 +536,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         if epoch > WARMUP_ITERATIONS:
             # TODO make sure it matches scheduler
             scheduler.step()
-        KLD_scale = (epoch + 1)/np.power(numEpochs,2)
+        KLD_scale = (epoch)/np.power(numEpochs,2)
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, KLD_scale)
         val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, KLD_scale)
