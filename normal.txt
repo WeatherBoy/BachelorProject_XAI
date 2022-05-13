@@ -3,3 +3,19 @@ running that script activates the virtual environment.
 If within the "Code" directory, which is where the workspace is situated for this project,
 then the virtual environment can be activated by:
 "Bachelor_venv\Scripts\activate"
+
+# For dark mode
+"workbench.colorCustomizations": {
+
+        "editorBracketHighlight.foreground1": "#746fffb1",
+        "editorBracketHighlight.foreground2": "#6efff3b5",
+        "editorBracketHighlight.unexpectedBracket.foreground": "#ff6ce6ba",
+    },
+
+# For light mode
+"workbench.colorCustomizations": {
+
+        "editorBracketHighlight.foreground1": "#000000",
+        "editorBracketHighlight.foreground2": "#7400af",
+        "editorBracketHighlight.unexpectedBracket.foreground": "#dd00a2",
+    },

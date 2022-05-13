@@ -148,20 +148,22 @@ def saliencyMapSingleImage(model, data, label):
     # flatten to one channel
     saliency_mean_abs = torch.mean(data.grad.abs(), dim=1) #torch.max(X.grad.data.abs(),dim=1)
     saliency_max_abs, _ = torch.max(data.grad.abs(), dim=1)
-    saliency_max_abs = saliency_max_abs.detach().cpu()
+    saliency_max_abs = saliency_max_abs.squeeze().cpu().detach().numpy()
     
     return saliency_max_abs#, saliency_mean_abs
 
-def intergratedGradSingleImage(model,data,label, trans: bool = False):
+
+def intergratedGradSingleImage(model, data, label):
     """
     Made by Alex.
     """
     ig = IntegratedGradients(model)
     model.zero_grad()
     attr_ig, _ = ig.attribute(data, target=label, baselines=data * 0, return_convergence_delta=True)
-    if trans:
-        attr_ig = np.transpose(attr_ig.squeeze().cpu().detach().numpy(), (1, 2, 0))
     
+    attr_ig, _ = torch.max(attr_ig[0], dim=0,  keepdim=True) # 1 channel
+    attr_ig = attr_ig.squeeze().cpu().detach().numpy()
+        
     return attr_ig
 
 ###################################################################################################
@@ -217,51 +219,49 @@ for i in range(NUM_SAMPLED_SALIENCY_MAPS):
         
         if j == 1:
             # saliency map 0
-            saliency_grad_0 = saliencyMapSingleImage(model_0, data, target)
+            ex_00 = saliencyMapSingleImage(model_0, data, target)
             plt.title("Saliency map \nmodel 0")
-            ex_00 = np.transpose(saliency_grad_0, (1, 2, 0))
             
             # standardize
             saliency_grad_0_standardized = (ex_00 - ex_00.min())/(ex_00.max() -ex_00.min())
-            plt.imshow(saliency_grad_0_standardized)
+            
+            plt.imshow(saliency_grad_0_standardized, cmap= 'gray')
+            
             
         elif j == 2:
             # saliency map 1
-            saliency_grad_1 = saliencyMapSingleImage(model_1, data, target)
+            ex_01 = saliencyMapSingleImage(model_1, data, target)
             plt.title("Saliency map \nmodel 1")
-            ex_01 = np.transpose(saliency_grad_1, (1, 2, 0))
             
             # standardize
             saliency_grad_1_standardized = (ex_01 - ex_01.min())/(ex_01.max() -ex_01.min())
             
-            plt.imshow(saliency_grad_1_standardized)
+            plt.imshow(saliency_grad_1_standardized, cmap= 'gray')
             
         elif j == 3:
             # integrated gradient 0
-            saliency_intgrad_0 = intergratedGradSingleImage(model_0, data, target)
+            ex_10 = intergratedGradSingleImage(model_0, data, target)
             plt.title("Integrated gradients \nmodel 0")
-            ex_10 = np.transpose(saliency_intgrad_0[0].detach().cpu(), (1, 2, 0))
             
             # standardize
             saliency_intgrad_0_standardized = (ex_10 - ex_10.min())/(ex_10.max() -ex_10.min())
             
-            plt.imshow(saliency_intgrad_0_standardized)
+            plt.imshow(saliency_intgrad_0_standardized, cmap= 'gray')
             
         elif j == 4:
             # integrated gradient 1
-            saliency_intgrad_1 = intergratedGradSingleImage(model_1, data, target)
+            ex_11 = intergratedGradSingleImage(model_1, data, target)
             plt.title("Integrated gradients \nmodel 1")
-            ex_11 = np.transpose(saliency_intgrad_1[0].detach().cpu(), (1, 2, 0))
             
             # standardize 
             saliency_intgrad_1_standardized = (ex_11 - ex_11.min())/(ex_11.max() -ex_11.min())
             
-            plt.imshow(saliency_intgrad_1_standardized)
+            plt.imshow(saliency_intgrad_1_standardized, cmap= 'gray')
     
     if (i + 1) % (NUM_SAMPLED_SALIENCY_MAPS // 10) == 0:
-        msg(f"Completed ~{round(i / NUM_SAMPLED_SALIENCY_MAPS * 100, 2)}%!")
+        msg(f"Completed ~{round((i + 1) / NUM_SAMPLED_SALIENCY_MAPS * 100, 2)}%!")
 
 plt.tight_layout()
-plt.savefig("saliency_maps_V2.jpg")
+plt.savefig("saliency_maps_V2_2.jpg")
 plt.close(fig)            
 ###################################################################################################

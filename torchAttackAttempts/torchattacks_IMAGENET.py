@@ -186,7 +186,7 @@ def saliencyMapSingleImage(model, data):
     
     # Get the index corresponding to the maximum score and the maximum score itself.
     score_max_index = scores.argmax()
-    score_max = scores[0,score_max_index]
+    score_max = scores[0, score_max_index]
    
     # Compute gradient of score_max with respect to the model
     score_max.backward()
