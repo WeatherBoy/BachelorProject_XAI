@@ -60,7 +60,9 @@ DATA_PATH = GBAR_DATA_PATH if torch.cuda.is_available() else LOCAL_DATA_PATH
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
 NETWORK_ARCHITECTURE = "seresnet152"
-MODEL_PATH = "../trainedModels/seresnet152-170-best-good.pth"
+MODEL_PATH = "../trainedModels/seresnet152-148-best-bad.pth"
+VALUES_PATH = "values_for_plot.pth"
+PLOT_PATH = "seresnet152-148-best-bad__unique-classifications.jpg"
 ###################################################################################################
 
 #%% Global variables (constants) ##################################################################
@@ -215,6 +217,31 @@ all_labels = np.array(all_labels)
 
 #%% Finally, we plot the results! #################################################################
 
+# N := rows; M := columns
+N = all_labels.shape[0]; M = all_labels.shape[1]
 
+unique_occurences = np.array([[len(np.unique(all_labels[:(i+1),j])) for j in range(M)] for i in range(N)])
+mean_unique_occurences = [np.mean(unique_occurences[i,:]) for i in range(N)]
+print(mean_unique_occurences)
 
+unique_occurences_flat = unique_occurences.flatten()
+x_vals = [[epsilon.item()]*M for epsilon in EPSILONS]
+
+# Saving
+torch.save({"unique_occurences_flat": unique_occurences_flat,
+            "x_vals": x_vals,
+            "EPSILONS": EPSILONS,
+            "mean_unique_occurences": mean_unique_occurences}, VALUES_PATH)
+
+# Plotting
+fig = plt.figure(figsize=(8,10))
+fig.patch.set_facecolor('white')
+plt.scatter(x_vals, unique_occurences_flat, label = "Unique occurences")
+plt.plot(EPSILONS, mean_unique_occurences, "-r", linewidth = 1.5, label = "Mean unique occurences")
+plt.xlabel("Epsilons")
+plt.ylabel("#Unique classifications")
+plt.legend() 
+plt.tight_layout()
+plt.savefig(PLOT_PATH)
+plt.close(fig) 
 ###################################################################################################
