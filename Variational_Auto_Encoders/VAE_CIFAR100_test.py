@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[12]:
+# In[1]:
 
 
 import torch
@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_sinVGG19_200.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_sinVGG19_200.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_lin_vgg19_norm.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_lin_vgg19_norm.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[13]:
+# In[2]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[14]:
+# In[3]:
 
 
 BATCH_SIZE = 32 #128
@@ -138,7 +138,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[15]:
+# In[4]:
 
 
 cfg = {
@@ -228,9 +228,9 @@ class Model(nn.Module):
 
     def reparameterization(self, mean, logvar):
         std = torch.exp(0.5*logvar) # remember exp(log(sqrt(var))) = exp(0.5*log(var))
-        eps = torch.rand_like(std)
+        eps = torch.randn(std.size())
         return (mean + eps*std)
-        
+    
                 
     def forward(self, x):
         mean, log_var = self.Encoder(x)
@@ -240,15 +240,16 @@ class Model(nn.Module):
         z = z.view(z.size(0), z.size(1), 1, 1)
         
         x_hat = self.Decoder(z)
+        #test = self.Decoder(mean)
         
-        return x_hat, mean, log_var
+        return x_hat, mean, log_var#, test
 
 
 # ## Defining Model and hyperparameters
 
 # ### Weird classs - warmUp stuff
 
-# In[16]:
+# In[5]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -272,7 +273,7 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[17]:
+# In[6]:
 
 
 
@@ -285,7 +286,7 @@ SGD_MOMENTUM = 0.9
 initial_lr = 1e-3
 warmup_initial_lr = 1e-5
 
-numEpochs = 200
+numEpochs = 100
 modeltype = 'VGG19'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim).to(DEVICE)
@@ -309,13 +310,13 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{initial_lr} \nmodel 
 
 # ## Test of dim
 
-# In[18]:
+# In[7]:
 
 
 
-DimCheck = False
+DimCheck = True
 
-if DimCheck == True:
+if DimCheck == False:
     x = torch.randn(2,3,32,32)
     print(f"size of input{x.size()}")
     # Encoder test
@@ -349,7 +350,7 @@ if DimCheck == True:
 
 # ## Checkpointing stuff
 
-# In[19]:
+# In[8]:
 
 
 # It is important that it is initialized to zero
@@ -432,7 +433,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[20]:
+# In[9]:
 
 
 
@@ -448,7 +449,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 
 # Train and testing loops
 
-# In[21]:
+# In[10]:
 
 
 def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
@@ -484,13 +485,13 @@ def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
         if (batch_idx + 1) % (5000//current_batch_size) == 0 or batch_idx == 0:
             # Print loss
             loss, current = loss.item(), batch_idx * current_batch_size
-            print(f"loss: repo: {loss_repo.item() :>4f}\t KLD scaled: {loss_KLD.item() :>4f}  [{current+1:>5d}/{size:>5d}]\n")
+            print(f"loss: repo: {loss_repo.item() :>4f}\t KLD scaled: {loss_KLD.item() :>4f}  [{current+1:>5d}/{size:>5d}]")
 
             if model.Encoder.features[0].weight.grad == None:
                 print("No gradient...?")
-            else:
+            #else:
                 
-                print(f"Gadient first layer at step, \nmin: {model.Encoder.features[0].weight.grad.data.min() :>5f} \t max: {model.Encoder.features[0].weight.grad.data.max() :>5f}\n") # FC_logvar.weight.grad 
+            #    print(f"Gadient first layer at step, \nmin: {model.Encoder.features[0].weight.grad.data.min() :>5f} \t max: {model.Encoder.features[0].weight.grad.data.max() :>5f}\n") # FC_logvar.weight.grad 
         if epoch <= WARMUP_ITERATIONS:
             warmup_scheduler.step()
         
@@ -525,7 +526,7 @@ def test_loop(model, loader, loss_fn, KLD_scale):
 
 # Let the training begin!
 
-# In[23]:
+# In[11]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -536,7 +537,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         if epoch > WARMUP_ITERATIONS:
             # TODO make sure it matches scheduler
             scheduler.step()
-        KLD_scale = epoch*6*np.power(10,5.2)*np.sin((epoch*2.5*np.pi)/numEpochs) #(epoch)/np.power(numEpochs,2)
+        KLD_scale = (epoch + 1)/np.power(numEpochs,2)
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, KLD_scale)
         val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, KLD_scale)
