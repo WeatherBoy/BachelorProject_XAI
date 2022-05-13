@@ -16,8 +16,8 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
 
 NETWORK_ARCHITECTURE = "seresnet152"
-MODEL_PATH_1 = "../trainedModels/seresnet152-170-best-good.pth"
-MODEL_PATH_2 = "../trainedModels/seresnet152-148-best-bad.pth"
+MODEL_PATH_0 = "../trainedModels/seresnet152-170-best-good.pth"
+MODEL_PATH_1 = "../trainedModels/seresnet152-148-best-bad.pth"
 ATTACK_PATH = "adversarial_examples_and_accuracies.pth"
 
 #%% Dumb function #################################################################################
@@ -122,15 +122,15 @@ if I_Want_Intermediary_Test:
 
 #%% Loading the model #############################################################################
 
+model_0 = copy.deepcopy(get_network(NETWORK_ARCHITECTURE).to(DEVICE))
 model_1 = copy.deepcopy(get_network(NETWORK_ARCHITECTURE).to(DEVICE))
-model_2 = copy.deepcopy(get_network(NETWORK_ARCHITECTURE).to(DEVICE))
+checkpoint_0 = torch.load(MODEL_PATH_0, map_location=torch.device(DEVICE))
 checkpoint_1 = torch.load(MODEL_PATH_1, map_location=torch.device(DEVICE))
-checkpoint_2 = torch.load(MODEL_PATH_2, map_location=torch.device(DEVICE))
+model_0.load_state_dict(checkpoint_0)
 model_1.load_state_dict(checkpoint_1)
-model_2.load_state_dict(checkpoint_2)
 
 # Set the model in evaluation mode. In this case this is for the Dropout layers
-model_1.eval(); model_2.eval()
+model_0.eval(); model_1.eval()
 msg("Loaded models and put in evaluation-mode.")
 
 
@@ -328,7 +328,7 @@ examples_2 = []
 # Run test for each epsilon
 for indx, eps in enumerate(EPSILONS):
     print(f"We get this far: {indx}")
-    acc_1, acc_2, ex_1, ex_2 = test(model_1, model_2, DEVICE, test_loader, eps, RANDOM_SEED, detransform_func = invert_normalization)
+    acc_1, acc_2, ex_1, ex_2 = test(model_0, model_1, DEVICE, test_loader, eps, RANDOM_SEED, detransform_func = invert_normalization)
     accuracies_1.append(acc_1) ; accuracies_2.append(acc_2)
     examples_1.append(ex_1) ; examples_2.append(ex_2)
 

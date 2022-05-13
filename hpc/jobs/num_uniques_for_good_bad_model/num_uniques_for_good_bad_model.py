@@ -10,8 +10,6 @@
 
 import torch
 import torchvision
-from captum.attr import IntegratedGradients
-import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -62,13 +60,12 @@ DATA_PATH = GBAR_DATA_PATH if torch.cuda.is_available() else LOCAL_DATA_PATH
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
 NETWORK_ARCHITECTURE = "seresnet152"
-MODEL_PATH_0 = "../trainedModels/seresnet152-170-best-good.pth"
-MODEL_PATH_1 = "../trainedModels/seresnet152-148-best-bad.pth"
+MODEL_PATH = "../trainedModels/seresnet152-170-best-good.pth"
 ###################################################################################################
 
 #%% Global variables (constants) ##################################################################
 
-BATCH_SIZE = 1     # Should ideally be one XD (poor code I know)
+BATCH_SIZE = 128
 RANDOM_SEED = 42
 NUM_WORKERS = 4
 CIFAR100_TRAIN_MEAN = torch.tensor([0.5070751592371323, 0.48654887331495095, 0.4409178433670343])
@@ -95,7 +92,7 @@ test_set = torchvision.datasets.CIFAR100(
 test_loader = torch.utils.data.DataLoader(
     test_set,
     batch_size=BATCH_SIZE,
-    shuffle=True,
+    shuffle=False,
     num_workers=NUM_WORKERS
     )
 
@@ -107,109 +104,117 @@ msg(f"succesfully initialised the test loader! \nThe number of test images: {num
 
 #%% Loading the model #############################################################################
 
-model_0 = get_network(NETWORK_ARCHITECTURE).to(DEVICE)
-checkpoint_0 = torch.load(MODEL_PATH_0, map_location=torch.device(DEVICE))
-model_0.load_state_dict(checkpoint_0)
+model = get_network(NETWORK_ARCHITECTURE).to(DEVICE)
+checkpoint = torch.load(MODEL_PATH, map_location=torch.device(DEVICE))
+model.load_state_dict(checkpoint)
 
 # Set the model in evaluation mode. In this case this is for the Dropout layers
-model_0.eval()
+model.eval()
 msg("Loaded model and put it in evaluation-mode.")
 ###################################################################################################
 
-#%% The main of this script (I guess) #############################################################
-# SM := Saliency Map
-# IG := Integrated Gradient
-# Original Image, SM Model_0, SM Model_1, IG Model_0, IG Model_1
-NUM_PICS_PER_ROW = 5    # Original picture + Number_of_methods * amount_of_models = 1 + 2 * 2
-NUM_SAMPLED_SALIENCY_MAPS = 20
+#%% FGSM Attack ###################################################################################
+# (Fast Gradient Sign Method) Attack.
+# Here we define the function that creates the adversarial example by disturbing the original image.
 
-dataiter = iter(test_loader)
-cnt = 0
+# FGSM attack code
+def fgsm_attack(image, epsilon, data_grad):
+    # Collect the element-wise sign of the data gradient
+    sign_data_grad = data_grad.sign()
+    # Create the perturbed image by adjusting each pixel of the input image
+    perturbed_image = image + epsilon*sign_data_grad
+    # Adding clipping to maintain [0,1] range
+    perturbed_image = torch.clamp(perturbed_image, -2, 2)
+    # Return the perturbed image
+    return perturbed_image
+###################################################################################################
 
-denormalize_func = torchvision.transforms.Compose([
-        torchvision.transforms.Normalize(mean = [0, 0, 0], std = 1/CIFAR100_TRAIN_STD),
-        torchvision.transforms.Normalize(mean = -1*CIFAR100_TRAIN_MEAN, std = [1,1,1])
-    ])
+#%% Testing function ##############################################################################
+# This is a testing function written by the peeps at pyTorch. It seems like it does a lot, I am not entirely sure what everything is though.
 
-fig = plt.figure(figsize=(10, 40))
-fig.patch.set_facecolor('white')
+def test(model, device, test_loader, epsilon):
+    # Manxi's superior testing function
+        
+    predicted_labels = []
     
-for i in range(NUM_SAMPLED_SALIENCY_MAPS):
-    for j in range(NUM_PICS_PER_ROW):
-        cnt += 1
-        
-        data, target = dataiter.next()
-        data, target = data.to(DEVICE), target.to(DEVICE)
-        
-        plt.subplot(NUM_SAMPLED_SALIENCY_MAPS, NUM_PICS_PER_ROW, cnt)
-        plt.xticks([], [])
-        plt.yticks([], [])
-        
-        if j == 0:
-            # original image
-            scores_0 = model_0(data)
-            score_max_index_0 = scores_0.argmax()
-            
-            scores_1 = model_1(data)
-            score_max_index_1 = scores_1.argmax()
-            plt.title(f"Correct : {classes[target]}" +
-                      f"\nModel0 : {classes[score_max_index_0]}" +
-                      f"\nModel1 : {classes[score_max_index_1]}")
-            
-            data, target = data.detach().cpu(), target.detach().cpu()
-            
-            original_image_denormalized = denormalize_func(data)
-            reshaped_im = np.transpose(original_image_denormalized[0], (1, 2, 0))
-            plt.imshow(reshaped_im)
-            
-        # If it isn't the first image, then data and target needs to be moved
-        # to device.   
-        
-        if j == 1:
-            # saliency map 0
-            ex_00 = saliencyMapSingleImage(model_0, data, target)
-            plt.title("Saliency map \nmodel 0")
-            
-            # standardize
-            saliency_grad_0_standardized = (ex_00 - ex_00.min())/(ex_00.max() -ex_00.min())
-            
-            plt.imshow(saliency_grad_0_standardized, cmap= 'gray')
-            
-            
-        elif j == 2:
-            # saliency map 1
-            ex_01 = saliencyMapSingleImage(model_1, data, target)
-            plt.title("Saliency map \nmodel 1")
-            
-            # standardize
-            saliency_grad_1_standardized = (ex_01 - ex_01.min())/(ex_01.max() -ex_01.min())
-            
-            plt.imshow(saliency_grad_1_standardized, cmap= 'gray')
-            
-        elif j == 3:
-            # integrated gradient 0
-            ex_10 = intergratedGradSingleImage(model_0, data, target)
-            plt.title("Integrated gradients \nmodel 0")
-            
-            # standardize
-            saliency_intgrad_0_standardized = (ex_10 - ex_10.min())/(ex_10.max() -ex_10.min())
-            
-            plt.imshow(saliency_intgrad_0_standardized, cmap= 'gray')
-            
-        elif j == 4:
-            # integrated gradient 1
-            ex_11 = intergratedGradSingleImage(model_1, data, target)
-            plt.title("Integrated gradients \nmodel 1")
-            
-            # standardize 
-            saliency_intgrad_1_standardized = (ex_11 - ex_11.min())/(ex_11.max() -ex_11.min())
-            
-            plt.imshow(saliency_intgrad_1_standardized, cmap= 'gray')
-    
-    if (i + 1) % (NUM_SAMPLED_SALIENCY_MAPS // 10) == 0:
-        msg(f"Completed ~{round((i + 1) / NUM_SAMPLED_SALIENCY_MAPS * 100, 2)}%!")
+    # Loop over all examples in test set
+    for data, target in test_loader:
 
-plt.tight_layout()
-plt.savefig("saliency_maps_V2_2.jpg")
-plt.close(fig)            
+        # Send the data and label to the device
+        data, target = data.to(device), target.to(device)
+        
+        # Set requires_grad attribute of tensor. Important for Attack
+        data.requires_grad = True
+        
+        output = model(data)
+
+        if epsilon.item() == 0:
+            # Forward pass the data through the model
+            _, init_pred_index = output.max(1, keepdim=True) # get the index of the max log-probability
+            predicted_labels.append(init_pred_index.flatten().detach().cpu().numpy())
+            
+        else:
+            # Set requires_grad attribute of tensor. Important for Attack
+            data.requires_grad = True
+            
+            # Calculate the loss
+            loss = torch.nn.functional.nll_loss(output, target)
+
+            # Zero all existing gradients
+            model.zero_grad()
+
+            # Calculate gradients of model in backward pass
+            loss.backward()
+
+            # Collect datagrad
+            data_grad = data.grad.data
+            
+            if not data_grad.size(0):
+                continue        
+
+            # Call FGSM Attack
+            perturbed_data = fgsm_attack(data, epsilon, data_grad)
+
+            # Re-classify the perturbed image
+            output = model(perturbed_data)
+
+            # Check for success
+            _, final_pred_index = output.max(1, keepdim=True) # get the index of the max log-probability
+            
+            predicted_labels.append(final_pred_index.flatten().detach().cpu().numpy())
+        
+    predicted_labels = np.concatenate(predicted_labels, axis=0)
+    predicted_labels = predicted_labels.flatten()
+
+    # Return the accuracy and an adversarial example
+    return predicted_labels
+###################################################################################################
+
+#%% We run the attack #####################################################################
+# This also saves some values, so that we can see how the accuracy falls along with greater epsilon (error) rates.
+
+NUM_EPSILONS = 5
+EPSILONS = torch.linspace(0, 0.3, NUM_EPSILONS + 1)
+# TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+# I think this is redundant 
+EPSILON_STEP_SIZE = EPSILONS[1].item()
+
+all_labels = []     
+        
+# Run test for each epsilon
+for indx, eps in enumerate(EPSILONS):
+    labels = test(model, DEVICE, test_loader, eps)
+    all_labels.append(labels)
+    msg(f"Done with iteration {indx + 1}/{NUM_EPSILONS + 1} - Roughly: {round((indx + 1)/(NUM_EPSILONS + 1) * 100, 2)}%")
+
+all_labels = np.array(all_labels)
+# NOTE:
+# all_labels is [different epsilons, different images]
+# So rows is the small dimension.
+###################################################################################################
+
+#%% Finally, we plot the results! #################################################################
+
+
+
 ###################################################################################################
