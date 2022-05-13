@@ -1,9 +1,8 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-# Showing saliency maps for good and bad model!
-# -
-# Mostly just comprised of code Alex wrote.
+# Showing number of different classifications a model go through
+# during attack.
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-# This program was created on Wed May 11 2022 by Felix Bo Caspersen (s183319), Mathematics and Technology - DTU
+# This program was created on Fri May 13 2022 by Felix Bo Caspersen (s183319), Mathematics and Technology - DTU
 
 #%% IMPORTS #######################################################################################
 # All of your packages are belong to us!
@@ -106,66 +105,15 @@ num_test_data = len(test_set)
 msg(f"succesfully initialised the test loader! \nThe number of test images: {num_test_data}") 
 ###################################################################################################
 
-#%% Loading the models #############################################################################
+#%% Loading the model #############################################################################
 
-model_0 = copy.deepcopy(get_network(NETWORK_ARCHITECTURE).to(DEVICE))
-model_1 = copy.deepcopy(get_network(NETWORK_ARCHITECTURE).to(DEVICE))
+model_0 = get_network(NETWORK_ARCHITECTURE).to(DEVICE)
 checkpoint_0 = torch.load(MODEL_PATH_0, map_location=torch.device(DEVICE))
-checkpoint_1 = torch.load(MODEL_PATH_1, map_location=torch.device(DEVICE))
 model_0.load_state_dict(checkpoint_0)
-model_1.load_state_dict(checkpoint_1)
 
 # Set the model in evaluation mode. In this case this is for the Dropout layers
-model_0.eval(); model_1.eval()
-msg("Loaded models and put in evaluation-mode.")
-###################################################################################################
-
-#%% All that big brain stuff! #####################################################################
-
-def saliencyMapSingleImage(model, data, label):
-    """
-    Made by Alex.
-    """
-    
-    # Zero all existing gradient
-    model.zero_grad()
-    # Set requires_grad attribute of tensor. Important for Attack
-    data.requires_grad_()
-    
-    # Get the index corresponding to the maximum score and the maximum score itself.
-    scores = model(data)
-    
-    # NOTE: I changed this.
-    # using the correct label to find the saliency map with.
-    # The zero is because the output is given in batches, but since the
-    # batch-size is only one - this is a batch of one (indexing still
-    # need to fith though.)
-    score_max = scores[0, label]
-   
-    # Compute gradient of score_max with respect to the model
-    score_max.backward()
-    
-    # flatten to one channel
-    saliency_mean_abs = torch.mean(data.grad.abs(), dim=1) #torch.max(X.grad.data.abs(),dim=1)
-    saliency_max_abs, _ = torch.max(data.grad.abs(), dim=1)
-    saliency_max_abs = saliency_max_abs.squeeze().cpu().detach().numpy()
-    
-    return saliency_max_abs#, saliency_mean_abs
-
-
-def intergratedGradSingleImage(model, data, label):
-    """
-    Made by Alex.
-    """
-    ig = IntegratedGradients(model)
-    model.zero_grad()
-    attr_ig, _ = ig.attribute(data, target=label, baselines=data * 0, return_convergence_delta=True)
-    
-    attr_ig, _ = torch.max(attr_ig[0], dim=0,  keepdim=True) # 1 channel
-    attr_ig = attr_ig.squeeze().cpu().detach().numpy()
-        
-    return attr_ig
-
+model_0.eval()
+msg("Loaded model and put it in evaluation-mode.")
 ###################################################################################################
 
 #%% The main of this script (I guess) #############################################################
