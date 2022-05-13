@@ -158,7 +158,7 @@ def intergratedGradSingleImage(model,data,label, trans: bool = False):
     """
     ig = IntegratedGradients(model)
     model.zero_grad()
-    attr_ig, _ = ig.attribute(data, target=label,baselines=data * 0, return_convergence_delta=True)
+    attr_ig, _ = ig.attribute(data, target=label, baselines=data * 0, return_convergence_delta=True)
     if trans:
         attr_ig = np.transpose(attr_ig.squeeze().cpu().detach().numpy(), (1, 2, 0))
     
@@ -181,7 +181,7 @@ denormalize_func = torchvision.transforms.Compose([
         torchvision.transforms.Normalize(mean = -1*CIFAR100_TRAIN_MEAN, std = [1,1,1])
     ])
 
-fig = plt.figure(figsize=(10,40))
+fig = plt.figure(figsize=(10, 40))
 fig.patch.set_facecolor('white')
     
 for i in range(NUM_SAMPLED_SALIENCY_MAPS):
@@ -218,32 +218,50 @@ for i in range(NUM_SAMPLED_SALIENCY_MAPS):
         if j == 1:
             # saliency map 0
             saliency_grad_0 = saliencyMapSingleImage(model_0, data, target)
-            plt.title("Saliency map - model 0")
-            reshaped_im = np.transpose(saliency_grad_0, (1, 2, 0))
-            plt.imshow(reshaped_im)
+            plt.title("Saliency map \nmodel 0")
+            ex_00 = np.transpose(saliency_grad_0, (1, 2, 0))
+            
+            # standardize
+            saliency_grad_0_standardized = (ex_00 - ex_00.min())/(ex_00.max() -ex_00.min())
+            plt.imshow(saliency_grad_0_standardized)
+            
         elif j == 2:
             # saliency map 1
             saliency_grad_1 = saliencyMapSingleImage(model_1, data, target)
-            plt.title("Saliency map - model 1")
-            reshaped_im = np.transpose(saliency_grad_1, (1, 2, 0))
-            plt.imshow(reshaped_im)
+            plt.title("Saliency map \nmodel 1")
+            ex_01 = np.transpose(saliency_grad_1, (1, 2, 0))
+            
+            # standardize
+            saliency_grad_1_standardized = (ex_01 - ex_01.min())/(ex_01.max() -ex_01.min())
+            
+            plt.imshow(saliency_grad_1_standardized)
+            
         elif j == 3:
             # integrated gradient 0
             saliency_intgrad_0 = intergratedGradSingleImage(model_0, data, target)
-            plt.title("Integrated gradients - model 0")
-            saliency_intgrad_0 = saliency_intgrad_0.detach().cpu()
-            plt.imshow(reshaped_im)
+            plt.title("Integrated gradients \nmodel 0")
+            ex_10 = np.transpose(saliency_intgrad_0[0].detach().cpu(), (1, 2, 0))
+            
+            # standardize
+            saliency_intgrad_0_standardized = (ex_10 - ex_10.min())/(ex_10.max() -ex_10.min())
+            
+            plt.imshow(saliency_intgrad_0_standardized)
+            
         elif j == 4:
             # integrated gradient 1
             saliency_intgrad_1 = intergratedGradSingleImage(model_1, data, target)
-            plt.title("Integrated gradients - model 1")
-            saliency_intgrad_1 = saliency_intgrad_1.detach().cpu()
-            plt.imshow(reshaped_im)
+            plt.title("Integrated gradients \nmodel 1")
+            ex_11 = np.transpose(saliency_intgrad_1[0].detach().cpu(), (1, 2, 0))
+            
+            # standardize 
+            saliency_intgrad_1_standardized = (ex_11 - ex_11.min())/(ex_11.max() -ex_11.min())
+            
+            plt.imshow(saliency_intgrad_1_standardized)
     
-    if i != 0 and i % (NUM_SAMPLED_SALIENCY_MAPS // 10) == 0:
-        msg(f"Completed ~ {i / NUM_SAMPLED_SALIENCY_MAPS * 100}%!")
+    if (i + 1) % (NUM_SAMPLED_SALIENCY_MAPS // 10) == 0:
+        msg(f"Completed ~{round(i / NUM_SAMPLED_SALIENCY_MAPS * 100, 2)}%!")
 
 plt.tight_layout()
-plt.savefig("saliency_maps.jpg")
+plt.savefig("saliency_maps_V2.jpg")
 plt.close(fig)            
 ###################################################################################################
