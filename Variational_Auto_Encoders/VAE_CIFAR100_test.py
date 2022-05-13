@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_linVGG19_200.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_linVGG19_200.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_sinVGG19_200.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_sinVGG19_200.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -536,7 +536,7 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
         if epoch > WARMUP_ITERATIONS:
             # TODO make sure it matches scheduler
             scheduler.step()
-        KLD_scale = (epoch)/np.power(numEpochs,2)
+        KLD_scale = epoch*6*np.power(10,5.2)*np.sin((epoch*2.5*np.pi)/numEpochs) #(epoch)/np.power(numEpochs,2)
         print(f"Epoch {epoch +1}\n----------------------------------")
         train_avg_repo, train_avg_KLD   = train_loop(model, train_loader, loss_function, optimizer, KLD_scale)
         val_avg_repo, val_avg_KLD       = test_loop(model, val_loader, loss_function, KLD_scale)
