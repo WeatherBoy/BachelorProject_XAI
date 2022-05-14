@@ -15,7 +15,6 @@ from torch import nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, random_split
-from ignite.handlers.param_scheduler import create_lr_scheduler_with_warmup 
 import numpy as np
 from torch import optim
 import os
@@ -316,7 +315,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{initial_lr} \nmodel 
 
 DimCheck = True
 
-if DimCheck == False:
+if not DimCheck:
     x = torch.randn(2,3,32,32)
     print(f"size of input{x.size()}")
     # Encoder test

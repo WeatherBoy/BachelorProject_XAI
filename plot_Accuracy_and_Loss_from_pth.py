@@ -49,7 +49,8 @@ ax2.legend()
 ax2.set_xlabel("epochs")
 ax2.set_ylabel("AVG loss")
 
-tikzplotlib.save("test_tikz.tex")
+# I don't think this will be the report where I use tikzplot, either...
+# tikzplotlib.save("test_tikz.tex")     
 plt.show()
 
 try:

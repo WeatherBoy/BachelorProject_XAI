@@ -14,7 +14,7 @@ parser.add_argument('--dataset', default='cifar100',
 parser.add_argument('--kernel-num', type=int, default=128)
 parser.add_argument('--z-size', type=int, default=128)
 
-parser.add_argument('--epochs', type=int, default=100)
+parser.add_argument('--epochs', type=int, default=10)
 parser.add_argument('--batch-size', type=int, default=32)
 parser.add_argument('--sample-size', type=int, default=32)
 parser.add_argument('--lr', type=float, default=5e-03)
@@ -49,7 +49,12 @@ if __name__ == '__main__':
     # move the model parameters to the gpu if needed.
     if cuda:
         vae.cuda()
-
+        print("The VAE is on the GPU!")
+    else:
+        import sys
+        print("The VAE is not on the GPU!")
+        sys.exit()
+    
     # run a test or a training process.
     if args.train:
         train_model(
