@@ -227,7 +227,7 @@ class Model(nn.Module):
 
     def reparameterization(self, mean, logvar):
         std = torch.exp(0.5*logvar) # remember exp(log(sqrt(var))) = exp(0.5*log(var))
-        eps = torch.randn(std.size())
+        eps = torch.randn(std.size(), device = DEVICE)
         return (mean + eps*std)
     
                 
