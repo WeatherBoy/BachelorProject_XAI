@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_lin_vgg19_norm.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_lin_vgg19_norm.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_2.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_2.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -227,7 +227,7 @@ class Model(nn.Module):
 
     def reparameterization(self, mean, logvar):
         std = torch.exp(0.5*logvar) # remember exp(log(sqrt(var))) = exp(0.5*log(var))
-        eps = torch.randn(std.size(), device = DEVICE)
+        eps = torch.randn(std.size(), device=DEVICE)
         return (mean + eps*std)
     
                 
@@ -277,14 +277,14 @@ class WarmUpLR(_LRScheduler):
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 5 # hyperparameter
+latent_dim = 128 #From 5 # hyperparameter
 
 WARMUP_ITERATIONS = 15
 WEIGHT_DECAY = 1e-5
 SGD_MOMENTUM = 0.9
 INITIAL_LR = 1e-4
 
-numEpochs = 150
+numEpochs = 100
 modeltype = 'VGG19'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim).to(DEVICE)
@@ -292,9 +292,9 @@ decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size
 
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 
-optimizer = torch.optim.Adam(model.parameters(), lr = INITIAL_LR, weight_decay=WEIGHT_DECAY)#optim.SGD(model.parameters(), lr= lr)
-#optimizer = torch.optim.SGD(model.parameters(), lr=INITIAL_LR, 
-#                            momentum=SGD_MOMENTUM, weight_decay=WEIGHT_DECAY)
+#optimizer = torch.optim.Adam(model.parameters(), lr = INITIAL_LR, weight_decay=WEIGHT_DECAY)#optim.SGD(model.parameters(), lr= lr)
+optimizer = torch.optim.SGD(model.parameters(), lr=INITIAL_LR, 
+                            momentum=SGD_MOMENTUM, weight_decay=WEIGHT_DECAY)
 
 iter_per_epoch = len(train_loader)
 warmup_scheduler = WarmUpLR(optimizer, iter_per_epoch * WARMUP_ITERATIONS)        
@@ -564,5 +564,4 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
-
 
