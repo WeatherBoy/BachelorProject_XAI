@@ -279,7 +279,7 @@ class WarmUpLR(_LRScheduler):
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 128 #From 5 # hyperparameter
 
-WARMUP_ITERATIONS = 15
+WARMUP_ITERATIONS = 10
 WEIGHT_DECAY = 1e-5
 SGD_MOMENTUM = 0.9
 INITIAL_LR = 1e-4
@@ -564,4 +564,5 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
+
 
