@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[1]:
+# In[29]:
 
 
 import torch
@@ -15,6 +15,7 @@ from torch import nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, random_split
+from ignite.handlers.param_scheduler import create_lr_scheduler_with_warmup 
 import numpy as np
 from torch import optim
 import os
@@ -45,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[2]:
+# In[3]:
 
 
 def msg(
@@ -77,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[3]:
+# In[30]:
 
 
 BATCH_SIZE = 32 #128
@@ -137,7 +138,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[4]:
+# In[31]:
 
 
 cfg = {
@@ -155,19 +156,19 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
         self.input_dim = input_dim
         self.features = self._make_layers(cfg[vgg_name])
-        self.FC_mean = nn.Conv2d(cfg[vgg_name][-2], latent_dim, kernel_size=1) # NOTE: -2 because last element is always "M"
-        self.FC_logvar = nn.Conv2d(cfg[vgg_name][-2], latent_dim, kernel_size=1)
+        self.FC_mean = nn.Conv2d(cfg[vgg_name][-2], latent_dim, kernel_size=1, stride=1, padding=0,) # NOTE: -2 because last element is always "M"
+        self.FC_logvar = nn.Conv2d(cfg[vgg_name][-2], latent_dim, kernel_size=1, stride=1, padding=0,)
 
     def forward(self, x):
         out = self.features(x)
         #out = out.view(out.size(0), -1) # Flatten(?)
         mean = self.FC_mean(out)
-        mean = mean.reshape(mean.size(0), mean.size(1), -1)
-        mean = torch.mean(mean, dim=-1, keepdim=True).unsqueeze(-1) # batchSize, latent, 1, 1
+        #mean = mean.reshape(mean.size(0), mean.size(1), -1).unsqueeze(-1)
+        #mean = torch.mean(mean, dim=-1, keepdim=True).unsqueeze(-1) # batchSize, latent, 1, 1
 
         log_var = self.FC_logvar(out)
-        log_var = log_var.reshape(log_var.size(0), log_var.size(1), -1)
-        log_var = torch.mean(log_var, dim=-1, keepdim=True).unsqueeze(-1) # batchSize, latent, 1, 1
+        #log_var = log_var.reshape(log_var.size(0), log_var.size(1), -1).unsqueeze(-1) 
+        #log_var = torch.mean(log_var, dim=-1, keepdim=True).unsqueeze(-1) # batchSize, latent, 1, 1
         return mean, log_var
       
 
@@ -194,7 +195,6 @@ class Decoder(nn.Module):
         self.latent_dim = latent_dim
         self.features = self._make_layers(cfg[vgg_name])
         self.FC_output = nn.Conv2d(cfg[vgg_name][-2], output_dim, kernel_size=1) # when kernel size is set to 1, this is indeed a FC layer:)
-        # self.FC_output = nn.Linear(cfg[vgg_name][-2], output_dim)
         
     def forward(self, x):
         out  = self.features(x)
@@ -248,7 +248,7 @@ class Model(nn.Module):
 
 # ### Weird classs - warmUp stuff
 
-# In[5]:
+# In[32]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -272,20 +272,19 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[6]:
+# In[33]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
 latent_dim = 5 # hyperparameter
 
-WARMUP_ITERATIONS = 10
-WEIGHT_DECAY = 1e-3
+WARMUP_ITERATIONS = 15
+WEIGHT_DECAY = 1e-5
 SGD_MOMENTUM = 0.9
-initial_lr = 1e-3
-warmup_initial_lr = 1e-5
+INITIAL_LR = 1e-4
 
-numEpochs = 100
+numEpochs = 150
 modeltype = 'VGG19'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim).to(DEVICE)
@@ -293,9 +292,9 @@ decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size
 
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 
-#optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay=1e-3)#optim.SGD(model.parameters(), lr= lr)
-optimizer = torch.optim.SGD(model.parameters(), lr=initial_lr, 
-                            momentum=SGD_MOMENTUM, weight_decay=WEIGHT_DECAY)
+optimizer = torch.optim.Adam(model.parameters(), lr = INITIAL_LR, weight_decay=WEIGHT_DECAY)#optim.SGD(model.parameters(), lr= lr)
+#optimizer = torch.optim.SGD(model.parameters(), lr=INITIAL_LR, 
+#                            momentum=SGD_MOMENTUM, weight_decay=WEIGHT_DECAY)
 
 iter_per_epoch = len(train_loader)
 warmup_scheduler = WarmUpLR(optimizer, iter_per_epoch * WARMUP_ITERATIONS)        
@@ -304,32 +303,32 @@ scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=numEpochs-WARM
 
 
 print(f"hyperparameters are:")
-msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{initial_lr} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
+msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{INITIAL_LR} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
 
 
 # ## Test of dim
 
-# In[7]:
+# In[37]:
 
 
 
 DimCheck = True
 
-if not DimCheck:
+if DimCheck == False:
     x = torch.randn(2,3,32,32)
-    print(f"size of input{x.size()}")
+    print(f"Size of input {x.size()}")
     # Encoder test
     mean, logvar = encoder(x)
-    print(f"The mean shape {mean.size()}, \nthe variance shape {logvar.size()}")
+    print(f"The mean shape {mean.size()}, \tthe variance shape {logvar.size()}")
 
     # reparm  trick
     std = torch.exp(0.5*logvar) # e^log(sqrt(sigma^2)) = e^(0.5*sigma^2) = sigma
-    eps = torch.rand_like(std) 
+    eps = torch.randn(std.size()) 
     z = mean + eps*std
 
     x_hat = decoder(z)
 
-    print(f"Latent vector size: {z.size()}, and x_hat {x_hat.size()}")
+    print(f"Latent vector size: {z.size()}, \tand x_hat {x_hat.size()}")
 
     # Model pred
     x_hat, mean, logvar = model(x)
@@ -338,13 +337,13 @@ if not DimCheck:
     KLD_loss = torch.mean( -0.5 * torch.sum(1+ logvar - mean**2 - logvar.exp(),dim=1),dim = 0)
     loss = repoloss + KLD_loss
 
-    # Grad type?
-    print(f"Repo loss grad type: {repoloss.grad_fn}")
-    print(f"KLD loss grad type: {KLD_loss.grad_fn}")
-    print(f"loss grad type: {loss.grad_fn}")
+    # # Grad type?
+    # print(f"Repo loss grad type: {repoloss.grad_fn}")
+    # print(f"KLD loss grad type: {KLD_loss.grad_fn}")
+    # print(f"loss grad type: {loss.grad_fn}")
 
 
-    print(f"loss: repo: {repoloss :>7f}\t KLD: {KLD_loss}\n")
+    # print(f"loss: repo: {repoloss :>7f}\t KLD: {KLD_loss}\n")
 
 
 # ## Checkpointing stuff
@@ -440,7 +439,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
     reproduction_loss = nn.MSELoss()(x_hat, x)
     #KLD      = - 0.5 * torch.sum(1+ log_var - mean.pow(2) - log_var.exp())
     KLD = torch.mean( -0.5 * torch.sum(1+ log_var - mean**2 - log_var.exp(),dim=1),dim = 0) # Mean loss for the whole batch
-    KLD *= KLD_scale
+    KLD *=  KLD_scale
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
     return reproduction_loss, KLD 
@@ -480,7 +479,7 @@ def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
             
         current_batch_size = len(x)
         
-        # Check gradient
+        # Check gradient and loss
         if (batch_idx + 1) % (5000//current_batch_size) == 0 or batch_idx == 0:
             # Print loss
             loss, current = loss.item(), batch_idx * current_batch_size
@@ -565,4 +564,5 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
+
 
