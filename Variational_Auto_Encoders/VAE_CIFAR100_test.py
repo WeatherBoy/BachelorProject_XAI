@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_2.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_2.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_3.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_3.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -272,17 +272,17 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[33]:
+# In[50]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 128 #From 5 # hyperparameter
+latent_dim = 5 #From 5 # hyperparameter
 
 WARMUP_ITERATIONS = 10
-WEIGHT_DECAY = 1e-5
+WEIGHT_DECAY = 1e-4
 SGD_MOMENTUM = 0.9
-INITIAL_LR = 1e-4
+INITIAL_LR = 1e-3
 
 numEpochs = 100
 modeltype = 'VGG19'
@@ -303,7 +303,7 @@ scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=numEpochs-WARM
 
 
 print(f"hyperparameters are:")
-msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{INITIAL_LR} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE}")
+msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{INITIAL_LR} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE} \nWeight decay \t\t{WEIGHT_DECAY}\nWarmup \t\t\t{WARMUP_ITERATIONS}")
 
 
 # ## Test of dim
