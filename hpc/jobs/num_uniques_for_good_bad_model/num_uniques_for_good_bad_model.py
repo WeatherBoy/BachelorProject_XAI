@@ -224,11 +224,12 @@ unique_occurences = np.array([[len(np.unique(all_labels[:(i+1),j])) for j in ran
 mean_unique_occurences = [np.mean(unique_occurences[i,:]) for i in range(N)]
 print(mean_unique_occurences)
 
+print("shape of unique occurences: ", unique_occurences.shape)
 unique_occurences_flat = unique_occurences.flatten()
 x_vals = [[epsilon.item()]*M for epsilon in EPSILONS]
 
 # Saving
-torch.save({"unique_occurences_flat": unique_occurences_flat,
+torch.save({"unique_occurences": unique_occurences,
             "x_vals": x_vals,
             "EPSILONS": EPSILONS,
             "mean_unique_occurences": mean_unique_occurences}, VALUES_PATH)
@@ -236,7 +237,7 @@ torch.save({"unique_occurences_flat": unique_occurences_flat,
 # Plotting
 fig = plt.figure(figsize=(8,10))
 fig.patch.set_facecolor('white')
-plt.scatter(x_vals, unique_occurences_flat, label = "Unique occurences")
+plt.boxplot(unique_occurences, label = "Unique occurences")
 plt.plot(EPSILONS, mean_unique_occurences, "-r", linewidth = 1.5, label = "Mean unique occurences")
 plt.xlabel("Epsilons")
 plt.ylabel("#Unique classifications")

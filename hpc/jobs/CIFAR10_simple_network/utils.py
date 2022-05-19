@@ -4,6 +4,7 @@
 # This program was created on Thu May 19 2022 by Felix Bo Caspersen (s183319), Mathematics and Technology - DTU
 
 import torch
+from torch.optim.lr_scheduler import _LRScheduler
 
 def msg(
     message: str,
@@ -32,7 +33,17 @@ def msg(
     print(">" * n2 + "  " + "<" * n2 + "\n")
 
 
-def train_loop(dataloader, model, loss_fn, optimizer, device, scheduler, gradient_clipping):
+def train_loop(
+    dataloader,
+    model,
+    epoch,
+    warmup_iterations,
+    loss_fn,
+    optimizer,
+    device,
+    warmup_scheduler,
+    gradient_clipping
+    ):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     train_loss, correct = 0, 0
@@ -64,9 +75,10 @@ def train_loop(dataloader, model, loss_fn, optimizer, device, scheduler, gradien
         if (batch + 1) % (10000//current_batch_size) == 0:
             loss, current = loss.item(), batch * current_batch_size
             print(f"Train loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-    
-    train_loss /= num_batches
-    scheduler.step()      
+            
+        if epoch <= warmup_iterations:
+            warmup_scheduler.step()
+    train_loss /= num_batches    
     correct /= size
     return 100*correct, train_loss
 
@@ -92,3 +104,21 @@ def test_loop(dataloader, model, loss_fn, device):
     print(f"Test Error (on validation set): \n Accuracy: {(100*correct):>0.1f}%, Avg test loss: {test_loss:>8f} \n")
     
     return 100*correct, test_loss
+
+class WarmUpLR(_LRScheduler):
+    """warmup_training learning rate scheduler
+    Args:
+        optimizer: optimzier(e.g. SGD)
+        total_iters: totoal_iters of warmup phase
+    """
+    def __init__(self, optimizer, total_iters, last_epoch=-1):
+
+        self.total_iters = total_iters
+        super().__init__(optimizer, last_epoch)
+        
+
+    def get_lr(self):
+        """we will use the first m batches, and set the learning
+        rate to base_lr * m / total_iters
+        """
+        return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]

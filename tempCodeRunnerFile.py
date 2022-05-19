@@ -1,1 +1,0 @@
-Transfer_Learning_EffNet_b7_weight_decay_1e7_medium_LR
