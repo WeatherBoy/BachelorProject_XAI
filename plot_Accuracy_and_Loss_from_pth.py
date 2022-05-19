@@ -4,7 +4,6 @@ import torch
 from matplotlib import pyplot as plt
 from matplotlib import pylab as pl
 from matplotlib import gridspec
-
 ###################################################################################################
 
 #%% Global constants and device configuration #####################################################
@@ -15,13 +14,13 @@ MODEL_NAME = "EfficientNet b7"
 BATCH_SIZE = "128"
 WEIGHT_DECAY = "1e-6"
 DATA_SET_NAME = "cifar100"
-WARM_RESTART = True
-TRANSFER_LEARNING = False
-OPTIMIZER = "Adam"
-LR_SCHEDULE = "cosine annealing"
+WARM_RESTART = False
+TRANSFER_LEARNING = True
+OPTIMIZER = "SGD"
+LR_SCHEDULE = "CosineAnnealingWR"
 TRANSFORMED_DATA = True
-MOMENTUM = 0.9
-GRAD_CLIP = 1e-5
+MOMENTUM = "0.9"
+GRAD_CLIP = "Norm to 1"
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -42,7 +41,7 @@ paths = [
     "Transfer_Learning_EffNet_b7_weight_decay_1e6_BIG2smallLR",                                                         # 3
     "Transfer_Learning_EffNet_b7_weight_decay_1e9_1To1e4LR",                                                            # 4
     "Transfer_Learning_EffNet_b7_weight_decay_1e7_medium_LR",                                                           # 5
-    "PLOT_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",                     # 5
+    "PLOT_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",                     # 6
     "PLOT_Transfer_Learning_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",   # 7
     "Transfer_Learning_EffNet_b7",                                                                                      # 8
 ]
@@ -50,12 +49,13 @@ save_model_path = [path_from_good_directory(path) for path in paths]
 ###################################################################################################
 
 #%% Wich model should you show ####################################################################
-
-checkpoint = torch.load(save_model_path[8], map_location=torch.device(DEVICE))
+PATH = save_model_path[8]
+checkpoint = torch.load(PATH, map_location=torch.device(DEVICE))
 ###################################################################################################
 
 #%% Plotting ######################################################################################
 
+print(checkpoint)
 normal_plot = False
 
 try:
@@ -72,7 +72,7 @@ num_epochs = len(accuracies[0])
 xVals = list(range(1, num_epochs + 1))
 
 if PLOT_WITH_HYPERPARAMS:
-    # try:
+    X_AXIS_PLACEMENT = 0.7
     # Create 2x2 sub plots
     gs = gridspec.GridSpec(2, 2)
     ax1 = plt.subplot(gs[0, 0])   # row 0, column 0
@@ -92,34 +92,28 @@ if PLOT_WITH_HYPERPARAMS:
     ax3 = plt.subplot(gs[:, 1])   # all of column 1
     ax3.set_axis_off()
     ax3.text(0, 1.0, f"Model name:", fontweight = "bold")
-    ax3.text(0.65, 1.0, MODEL_NAME)
+    ax3.text(X_AXIS_PLACEMENT, 1.0, MODEL_NAME)
     ax3.text(0, 0.9, f"Batch size:", fontweight = "bold")
-    ax3.text(0.65, 0.9, BATCH_SIZE)
+    ax3.text(X_AXIS_PLACEMENT, 0.9, BATCH_SIZE)
     ax3.text(0, 0.8, f"Weight decay:", fontweight = "bold")
-    ax3.text(0.65, 0.8, WEIGHT_DECAY)
+    ax3.text(X_AXIS_PLACEMENT, 0.8, WEIGHT_DECAY)
     ax3.text(0, 0.7, f"Data set: ", fontweight = "bold")
-    ax3.text(0.65, 0.7, DATA_SET_NAME)
+    ax3.text(X_AXIS_PLACEMENT, 0.7, DATA_SET_NAME)
     ax3.text(0, 0.6, f"Warm restart: ", fontweight = "bold")
-    ax3.text(0.65, 0.6, WARM_RESTART)
+    ax3.text(X_AXIS_PLACEMENT, 0.6, WARM_RESTART)
     ax3.text(0, 0.5, f"Transfer learning:  ", fontweight = "bold")
-    ax3.text(0.65, 0.5, TRANSFER_LEARNING)
+    ax3.text(X_AXIS_PLACEMENT, 0.5, TRANSFER_LEARNING)
     ax3.text(0, 0.4, f"Optimizer:  ", fontweight = "bold")
-    ax3.text(0.65, 0.4, OPTIMIZER)
+    ax3.text(X_AXIS_PLACEMENT, 0.4, OPTIMIZER)
     ax3.text(0, 0.3, f"LR schedule:  ", fontweight = "bold")
-    ax3.text(0.65, 0.3, LR_SCHEDULE)
+    ax3.text(X_AXIS_PLACEMENT, 0.3, LR_SCHEDULE)
     ax3.text(0, 0.2, f"Transformed data:  ", fontweight = "bold")
-    ax3.text(0.65, 0.2, TRANSFORMED_DATA)
+    ax3.text(X_AXIS_PLACEMENT, 0.2, TRANSFORMED_DATA)
     ax3.text(0, 0.1, f"Momentum: ", fontweight = "bold")
-    ax3.text(0.65, 0.1, MOMENTUM)
+    ax3.text(X_AXIS_PLACEMENT, 0.1, MOMENTUM)
     ax3.text(0, 0.0, f"Gradient clipping:  ", fontweight = "bold")
-    ax3.text(0.65, 0.0, GRAD_CLIP)
-    plt.show()
-        
-    """
-    except:
-        normal_plot = True
-        print("The required parameters for a plot with hyperparameters didn't exist...")
-    """    
+    ax3.text(X_AXIS_PLACEMENT, 0.0, GRAD_CLIP)
+    plt.show()   
     
 elif normal_plot:
     fig, (ax1, ax2) = plt.subplots(2, 1)
@@ -138,7 +132,25 @@ elif normal_plot:
     # I don't think this will be the report where I use tikzplot, either...
     # tikzplotlib.save("test_tikz.tex")     
     plt.show()
-
+    
+else:
+    normal_plot = True
+    print("The required parameters for a plot with hyperparameters didn't exist...")
+    torch.save({
+        "accuracies" : accuracies,
+        "losses" : losses,
+        "learning_rate" : checkpoint["learning_rate"],
+        "model_name" : MODEL_NAME,
+        "batch_size" : BATCH_SIZE,
+        "weight_decay" : WEIGHT_DECAY,
+        "data_set_name" : DATA_SET_NAME,
+        "warm_restart" : WARM_RESTART,
+        "transfer_learning" : TRANSFER_LEARNING,
+        "LR_schedule" : LR_SCHEDULE,
+        "transformed_data" : TRANSFORMED_DATA,
+        "gradient_clipping" : GRAD_CLIP
+    }, PATH)
+    
 try:
     learning_rates = checkpoint["learning_rate"]
     num_LRs = len(learning_rates)

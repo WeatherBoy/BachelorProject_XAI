@@ -105,6 +105,7 @@ def test(model, device, test_loader, epsilon, detransform_func = lambda x: x):
     adv_final_labels = []
     final_predictions = []
     initial_predictions = []
+    targets = []
     
     # Loop over all examples in test set
     for data, target in test_loader:
@@ -152,6 +153,7 @@ def test(model, device, test_loader, epsilon, detransform_func = lambda x: x):
         adv_imgs.append(adv_ex_denormalized)
         adv_initial_labels.append(init_pred_index.detach())
         adv_final_labels.append(final_pred_index.detach())
+        targets.append(target.detach())
 
         initial_predictions.append(init_pred_index.flatten().detach().cpu().numpy())
         final_predictions.append(final_pred_index.flatten().detach().cpu().numpy())
@@ -166,13 +168,15 @@ def test(model, device, test_loader, epsilon, detransform_func = lambda x: x):
         
     adv_initial_labels = torch.cat(adv_initial_labels, dim=0).cpu().numpy()
     adv_final_labels = torch.cat(adv_final_labels, dim=0).cpu().numpy()
+    targets = torch.cat(targets, dim=0).cpu().numpy()
     
     # making sure it actually has the dimensionality we desire!
     adv_imgs =  torch.cat(adv_imgs, dim=0).detach().cpu().numpy()
     
     adv_examples = {"initial_labels" : adv_initial_labels,
                     "final_labels" : adv_final_labels,
-                    "adversarial_images" : adv_imgs}    
+                    "adversarial_images" : adv_imgs,
+                    "targets" : targets}    
     
     print(f"Epsilon: {round(epsilon.item(), 3)}\tTest Accuracy = {correct} / {len(initial_predictions)} = {final_acc}")
 
@@ -279,12 +283,22 @@ for i, _ in enumerate(examples_0):
     print("shape of initial_labels 1:")
     print(initial_labels_1.shape)
     
-    indx = initial_labels_0.flatten() == initial_labels_1.flatten()
-    print("Shape of index:")
+    targets_0 = examples_0[i]["targets"]
+    targets_1 = examples_1[i]["targets"]
+    print("shape of targets 0:")
+    print(targets_0.shape)
+    print("shape of targets 1:")
+    print(targets_1.shape)
+    
+    indx_0 =    initial_labels_0.flatten() == targets_0   
+    indx_1 =    initial_labels_1.flatten() == targets_1
+    indx =      np.logical_and(indx_0, indx_1)
     
     try:
+        print("Shape of index:")
         print(indx.shape)
     except:
+        print("size of index:")
         print(indx.size)
     
     # post attack labels
