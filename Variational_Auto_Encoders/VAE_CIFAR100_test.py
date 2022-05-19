@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_5.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_5.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_6.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_6.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -301,7 +301,7 @@ SGD_MOMENTUM = 0.9
 INITIAL_LR = 1e-3
 
 numEpochs = 100
-modeltype = 'VGG19'
+modeltype = 'VGG11'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim).to(DEVICE)
 decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size).to(DEVICE)
