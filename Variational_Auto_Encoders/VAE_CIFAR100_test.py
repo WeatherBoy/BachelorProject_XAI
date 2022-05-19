@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[1]:
+# In[7]:
 
 
 import torch
@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_4.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_4.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_5.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_5.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[4]:
+# In[8]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[5]:
+# In[23]:
 
 
 BATCH_SIZE = 32 #128
@@ -92,8 +92,8 @@ torch.manual_seed(RANDOM_SEED)
 torch.cuda.manual_seed(RANDOM_SEED)
 ##############################################################
 
-CIFAR100_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
-CIFAR100_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
+CIFAR100_MEAN = [0.5070751592371323, 0.48654887331495095, 0.4409178433670343]
+CIFAR100_STD = [0.2673342858792401, 0.2564384629170883, 0.27615047132568404]
 
 transform_train = torchvision.transforms.Compose([
         #torchvision.transforms.RandomCrop(32, padding=4),
@@ -111,14 +111,14 @@ transform_test = torchvision.transforms.Compose([
 trainval_set = datasets.CIFAR100(
     root = '../data/datasetCIFAR100',
     train = True,                         
-    transform = transform_train, #ToTensor(), 
+    transform = ToTensor(),#transform_train, # 
     download = True
     )
 
 test_set = datasets.CIFAR100(
     root = '../data/datasetCIFAR100', 
     train = False, 
-    transform = transform_test #ToTensor()
+    transform = ToTensor() #transform_test 
     )
 
 train_num = int(len(trainval_set) * (1 - VALIDATION_SPLIT))
@@ -154,7 +154,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[31]:
+# In[24]:
 
 
 cfg = {
@@ -196,7 +196,7 @@ class Encoder(nn.Module):
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
                 layers += [nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
-                           nn.BatchNorm2d(x),
+                           #nn.BatchNorm2d(x),
                            nn.GELU()] # changed from ReLU
                 in_channels = x
         
@@ -229,8 +229,8 @@ class Decoder(nn.Module):
                 layers += [nn.ConvTranspose2d(cfg[i-1], cfg[i-1], kernel_size=2, stride=2)] # in decoder, we should upsample the image, instead of downsample it
             else:
                 layers += [nn.Conv2d(in_channels, cfg[i], kernel_size=3, padding=1),
-                           nn.BatchNorm2d(cfg[i]),
-                           nn.LeakyReLU()] # changed from ReLU
+                           #nn.BatchNorm2d(cfg[i]),
+                           nn.GELU()] # changed from ReLU
                 in_channels = cfg[i]
         
         return nn.Sequential(*layers)
@@ -264,7 +264,7 @@ class Model(nn.Module):
 
 # ### Weird classs - warmUp stuff
 
-# In[32]:
+# In[25]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -288,12 +288,12 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[50]:
+# In[26]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 5 #From 5 # hyperparameter
+latent_dim = 10 #From 5 # hyperparameter
 
 WARMUP_ITERATIONS = 10
 WEIGHT_DECAY = 1e-4
@@ -324,7 +324,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{INITIAL_LR} \nmodel 
 
 # ## Test of dim
 
-# In[37]:
+# In[ ]:
 
 
 
@@ -364,7 +364,7 @@ if DimCheck == False:
 
 # ## Checkpointing stuff
 
-# In[8]:
+# In[ ]:
 
 
 # It is important that it is initialized to zero
@@ -447,7 +447,7 @@ else:
 # ## Training
 # In CIFAR100. First define loss function
 
-# In[9]:
+# In[ ]:
 
 
 
@@ -463,7 +463,7 @@ def loss_function(x, x_hat, mean, log_var, KLD_scale):
 
 # Train and testing loops
 
-# In[10]:
+# In[ ]:
 
 
 def train_loop(model, loader, loss_fn, optimizer, KLD_scale):
@@ -540,7 +540,7 @@ def test_loop(model, loader, loss_fn, KLD_scale):
 
 # Let the training begin!
 
-# In[11]:
+# In[ ]:
 
 
 if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
@@ -580,4 +580,5 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
+
 
