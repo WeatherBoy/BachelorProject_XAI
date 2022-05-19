@@ -25,7 +25,7 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_4n.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_4.pth"
 save_loss_path = "../plottables/VAE_CIFAR100_4.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
