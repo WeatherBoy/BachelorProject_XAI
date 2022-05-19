@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[29]:
+# In[1]:
 
 
 import torch
@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_3.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_3.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_4n.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_4.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[3]:
+# In[4]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[30]:
+# In[5]:
 
 
 BATCH_SIZE = 32 #128
@@ -92,17 +92,33 @@ torch.manual_seed(RANDOM_SEED)
 torch.cuda.manual_seed(RANDOM_SEED)
 ##############################################################
 
+CIFAR100_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
+CIFAR100_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
+
+transform_train = torchvision.transforms.Compose([
+        #torchvision.transforms.RandomCrop(32, padding=4),
+        #torchvision.transforms.RandomHorizontalFlip(),
+        #torchvision.transforms.RandomRotation(15),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD)
+    ])
+
+transform_test = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD)
+    ])
+
 trainval_set = datasets.CIFAR100(
     root = '../data/datasetCIFAR100',
     train = True,                         
-    transform = ToTensor(), 
+    transform = transform_train, #ToTensor(), 
     download = True
     )
 
 test_set = datasets.CIFAR100(
     root = '../data/datasetCIFAR100', 
     train = False, 
-    transform = ToTensor()
+    transform = transform_test #ToTensor()
     )
 
 train_num = int(len(trainval_set) * (1 - VALIDATION_SPLIT))
@@ -564,5 +580,4 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
-
 
