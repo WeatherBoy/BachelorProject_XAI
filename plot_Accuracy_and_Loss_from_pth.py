@@ -1,25 +1,62 @@
+#%% Imports #######################################################################################
+
 import torch
 from matplotlib import pyplot as plt
-import tikzplotlib
+from matplotlib import pylab as pl
+from matplotlib import gridspec
+
+###################################################################################################
+
+#%% Global constants and device configuration #####################################################
+
+PLOT_WITH_HYPERPARAMS = True
+
+MODEL_NAME = "EfficientNet b7"
+BATCH_SIZE = "128"
+WEIGHT_DECAY = "1e-6"
+DATA_SET_NAME = "cifar100"
+WARM_RESTART = True
+TRANSFER_LEARNING = False
+OPTIMIZER = "Adam"
+LR_SCHEDULE = "cosine annealing"
+TRANSFORMED_DATA = True
+MOMENTUM = 0.9
+GRAD_CLIP = 1e-5
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
+###################################################################################################
 
+#%% Path stuff ####################################################################################
+def path_from_good_directory(model_name : str):
+    good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
+    return good_dir + model_name + ".pth"
+    
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
-good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
-save_model_path1 = good_dir + "plot_seresnet152_poorly_regularised" + ".pth"
-save_model_path2 = good_dir + "plot_seresnet152_well_regularised" + ".pth"
-save_model_path3 = good_dir + "EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6" + ".pth"
-save_model_path3_1 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6-190c0ba3-ee49-4735-aa48-d41afa8c3c0c/plot.pth"
-save_model_path4 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/main_cls_but_altered_by_Felix-956fe06e-3fbb-433b-8688-1e7ddd1bb681/adversarial_ResNet18_cifar100.pth"
-save_model_path5 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_150_Epochs_weight_decay_1e5-93aa7695-4b38-48a1-8fc0-03cb5ae86187/adversarial_efficientnet_b7_cifar100.pth"
-save_model_path6 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_150_Epochs-bed3c342-b686-4603-90b9-e4c93ff1d02a/adversarial_efficientnet_b7_cifar100.pth"
-save_model_path7 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7_400_Epochs-e0a6c4a0-c339-42c9-be65-9b2a22219d95/adversarial_efficientnet_v2_cifar100.pth"
-save_model_path8 = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/EfficientNet_b7-3317d999-41d2-4930-bc0e-4cb93bfe5fe5/adversarial_efficientnet_b7_cifar100.pth"
+paths = [
+    "plot_seresnet152_poorly_regularised",                                                                              # 0
+    "plot_seresnet152_well_regularised",                                                                                # 1
+    "EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6",                                           # 2
+    "Transfer_Learning_EffNet_b7_weight_decay_1e6_BIG2smallLR",                                                         # 3
+    "Transfer_Learning_EffNet_b7_weight_decay_1e9_1To1e4LR",                                                            # 4
+    "Transfer_Learning_EffNet_b7_weight_decay_1e7_medium_LR",                                                           # 5
+    "PLOT_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",                     # 5
+    "PLOT_Transfer_Learning_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",   # 7
+    "Transfer_Learning_EffNet_b7",                                                                                      # 8
+]
+save_model_path = [path_from_good_directory(path) for path in paths]
+###################################################################################################
 
-checkpoint = torch.load(save_model_path2, map_location=torch.device(DEVICE))
+#%% Wich model should you show ####################################################################
+
+checkpoint = torch.load(save_model_path[8], map_location=torch.device(DEVICE))
+###################################################################################################
+
+#%% Plotting ######################################################################################
+
+normal_plot = False
 
 try:
     accuracies = checkpoint['accuracy']
@@ -33,31 +70,80 @@ print(f"max accuracy (test): {max(accuracies[0][1:])} \nmin loss (test): {min(lo
 num_epochs = len(accuracies[0])
 
 xVals = list(range(1, num_epochs + 1))
-#print("Test accuracies:", accuracies[0])
-#print("Train accuracies:", accuracies[1])
 
-fig, (ax1, ax2) = plt.subplots(2, 1)
-fig.suptitle(f"Accuracy and loss over {num_epochs} epochs")
-ax1.plot(xVals, accuracies[0], 'o-', label="Test")
-ax1.plot(xVals, accuracies[1], 'o-', label="Train")
-ax1.legend()
-ax1.set_ylabel("Accuracy")
+if PLOT_WITH_HYPERPARAMS:
+    # try:
+    # Create 2x2 sub plots
+    gs = gridspec.GridSpec(2, 2)
+    ax1 = plt.subplot(gs[0, 0])   # row 0, column 0
+    ax1.plot(xVals, accuracies[0], 'o-', label="Test")
+    ax1.plot(xVals, accuracies[1], 'o-', label="Train")
+    ax1.legend()
+    ax1.set_title(f"Accuracy and loss over {num_epochs} epochs")
+    ax1.set_ylabel("Accuracy")
+    
+    ax2 = plt.subplot(gs[1, 0])   # row 1, column 0
+    ax2.plot(xVals, losses[0], '.-', label="Test")
+    ax2.plot(xVals, losses[1], '.-', label="Train")
+    ax2.legend()
+    ax2.set_xlabel("epochs")
+    ax2.set_ylabel("AVG loss")
+    
+    ax3 = plt.subplot(gs[:, 1])   # all of column 1
+    ax3.set_axis_off()
+    ax3.text(0, 1.0, f"Model name:", fontweight = "bold")
+    ax3.text(0.65, 1.0, MODEL_NAME)
+    ax3.text(0, 0.9, f"Batch size:", fontweight = "bold")
+    ax3.text(0.65, 0.9, BATCH_SIZE)
+    ax3.text(0, 0.8, f"Weight decay:", fontweight = "bold")
+    ax3.text(0.65, 0.8, WEIGHT_DECAY)
+    ax3.text(0, 0.7, f"Data set: ", fontweight = "bold")
+    ax3.text(0.65, 0.7, DATA_SET_NAME)
+    ax3.text(0, 0.6, f"Warm restart: ", fontweight = "bold")
+    ax3.text(0.65, 0.6, WARM_RESTART)
+    ax3.text(0, 0.5, f"Transfer learning:  ", fontweight = "bold")
+    ax3.text(0.65, 0.5, TRANSFER_LEARNING)
+    ax3.text(0, 0.4, f"Optimizer:  ", fontweight = "bold")
+    ax3.text(0.65, 0.4, OPTIMIZER)
+    ax3.text(0, 0.3, f"LR schedule:  ", fontweight = "bold")
+    ax3.text(0.65, 0.3, LR_SCHEDULE)
+    ax3.text(0, 0.2, f"Transformed data:  ", fontweight = "bold")
+    ax3.text(0.65, 0.2, TRANSFORMED_DATA)
+    ax3.text(0, 0.1, f"Momentum: ", fontweight = "bold")
+    ax3.text(0.65, 0.1, MOMENTUM)
+    ax3.text(0, 0.0, f"Gradient clipping:  ", fontweight = "bold")
+    ax3.text(0.65, 0.0, GRAD_CLIP)
+    plt.show()
+        
+    """
+    except:
+        normal_plot = True
+        print("The required parameters for a plot with hyperparameters didn't exist...")
+    """    
+    
+elif normal_plot:
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    fig.suptitle(f"Accuracy and loss over {num_epochs} epochs")
+    ax1.plot(xVals, accuracies[0], 'o-', label="Test")
+    ax1.plot(xVals, accuracies[1], 'o-', label="Train")
+    ax1.legend()
+    ax1.set_ylabel("Accuracy")
 
-ax2.plot(xVals, losses[0], '.-', label="Test")
-ax2.plot(xVals, losses[1], '.-', label="Train")
-ax2.legend()
-ax2.set_xlabel("epochs")
-ax2.set_ylabel("AVG loss")
+    ax2.plot(xVals, losses[0], '.-', label="Test")
+    ax2.plot(xVals, losses[1], '.-', label="Train")
+    ax2.legend()
+    ax2.set_xlabel("epochs")
+    ax2.set_ylabel("AVG loss")
 
-# I don't think this will be the report where I use tikzplot, either...
-# tikzplotlib.save("test_tikz.tex")     
-plt.show()
+    # I don't think this will be the report where I use tikzplot, either...
+    # tikzplotlib.save("test_tikz.tex")     
+    plt.show()
 
 try:
     learning_rates = checkpoint["learning_rate"]
     num_LRs = len(learning_rates)
     plt.figure(figsize=(14,4))
-    plt.plot(xVals[:130], learning_rates[:130])
+    plt.plot(xVals, learning_rates)
     #plt.title(f"Learning rates over {num_LRs} epochs.")
     plt.xlabel("Epochs")
     plt.ylabel("Learning rate")

@@ -66,13 +66,6 @@ torch.manual_seed(RANDOM_SEED)
 torch.cuda.manual_seed(RANDOM_SEED)
 ##############################################################
 
-trainval_set = torchvision.datasets.CIFAR100(
-    root = '../data/datasetCIFAR100',
-    train = True,                         
-    transform = torchvision.transforms.ToTensor(), 
-    download = True
-    )
-
 test_set = torchvision.datasets.CIFAR100(
     root = '../data/datasetCIFAR100', 
     train = False, 
@@ -82,25 +75,6 @@ test_set = torchvision.datasets.CIFAR100(
     ])
     )
 
-# Creating data indices for training and validation splits:
-train_num = int(len(trainval_set) * (1 - VALIDATION_SPLIT))
-train_set, val_set = torch.utils.data.random_split(trainval_set, [train_num, len(trainval_set) - train_num])
-msg("Split train data into trainset and validation set.")
-
-train_loader = torch.utils.data.DataLoader(
-    train_set,
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-    num_workers=NUM_WORKERS
-    )
-
-val_loader = torch.utils.data.DataLoader(
-    val_set,
-    batch_size=BATCH_SIZE,
-    shuffle=False,
-    num_workers=NUM_WORKERS
-    )
-
 test_loader = torch.utils.data.DataLoader(
     test_set,
     batch_size=BATCH_SIZE,
@@ -108,7 +82,7 @@ test_loader = torch.utils.data.DataLoader(
     num_workers=NUM_WORKERS
     )
 
-classes = trainval_set.classes # or class_to_idx
+classes = test_set.classes # or class_to_idx
 
 
 #%% Intermediary test #############################################################################
@@ -279,7 +253,6 @@ def test(model, device, test_loader, epsilon, someSeed):
 
 NUM_EPSILONS = 5
 EPSILONS = torch.linspace(0, 0.3, NUM_EPSILONS + 1)
-EPSILON_STEP_SIZE = EPSILONS[1].item()
 
 accuracies = []
 examples = []

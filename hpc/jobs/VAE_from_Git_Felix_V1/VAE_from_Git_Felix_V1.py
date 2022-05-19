@@ -13,9 +13,9 @@ from utils import msg, get_data_loader, load_checkpoint
 
 ON_GPU = True
 RESUME_TRAINING = False
-EPOCHS = 100
+EPOCHS = 200
 BATCH_SIZE = 32
-LEARNING_RATE = 5e-03
+LEARNING_RATE = 1e-05
 WEIGHT_DECAY = 1e-03
 RANDOM_SEED = 42
 SIZE_OF_Z = 128
@@ -88,7 +88,6 @@ for epoch in range(epoch_start, EPOCHS + 1):
     train_avg_repo, train_avg_KLD = train_loop(
         model = vae,
         optimizer = optimizer,
-        dataset_label = DATASET,
         data_loader = train_loader,
         current_epoch = epoch,       
         batch_size = BATCH_SIZE, 
@@ -102,8 +101,8 @@ for epoch in range(epoch_start, EPOCHS + 1):
         )
     
     # Save information for plotting
-    loss_train[0,epoch], loss_train[1,epoch]    = train_avg_repo, train_avg_KLD
-    loss_val[0, epoch], loss_val[1, epoch]      = val_avg_repo, val_avg_KLD     
+    loss_train[0, epoch - 1], loss_train[1, epoch -1]    = train_avg_repo, train_avg_KLD
+    loss_val[0, epoch - 1], loss_val[1, epoch - 1]      = val_avg_repo, val_avg_KLD     
     avg_loss_val = val_avg_repo + val_avg_KLD
     
     if avg_loss_val < best_loss:

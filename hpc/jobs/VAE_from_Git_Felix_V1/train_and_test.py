@@ -24,7 +24,7 @@ def train_loop(
 
     for batch_index, (x, _) in data_stream:
         # At what iteration are we?
-        iteration = (current_epoch-1)*(len(size_dataset)//batch_size) + batch_index
+        iteration = (current_epoch-1)*(size_dataset//batch_size) + batch_index
 
         # prepare data on gpu if needed
         x = Variable(x).cuda() if cuda else Variable(x)
@@ -69,7 +69,7 @@ def train_loop(
     return train_avg_repo, train_avg_KLD
 
 
-def test_model(
+def test_loop(
     model,
     data_loader,
     cuda = False
