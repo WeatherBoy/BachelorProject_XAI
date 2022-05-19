@@ -1,1 +1,1 @@
-C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/data/adversarial_imgs/first_test.pth
+C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/data/adversarial_imgs/data_with_good_indexing.pth

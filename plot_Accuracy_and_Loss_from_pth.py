@@ -148,6 +148,7 @@ else:
         "transfer_learning" : TRANSFER_LEARNING,
         "LR_schedule" : LR_SCHEDULE,
         "transformed_data" : TRANSFORMED_DATA,
+        "momentum" : MOMENTUM,
         "gradient_clipping" : GRAD_CLIP
     }, PATH)
     

@@ -223,6 +223,7 @@ for indx, eps in enumerate(EPSILONS):
 torch.save({
     "accuracies" : accuracies_0,
     "examples" : examples_0,
+    "epsilons" : EPSILONS
     }, ATTACK_PATH_0)
 
 # Wiping everything from the GPU, so that we don't get
@@ -258,6 +259,7 @@ for indx, eps in enumerate(EPSILONS):
 torch.save({
     "accuracies" : accuracies_1,
     "examples" : examples_1,
+    "epsilons" : EPSILONS
     }, ATTACK_PATH_1)  
   
 # Wiping everything from the GPU, so that we don't get
@@ -338,7 +340,8 @@ model_1_data = {"examples" : final_examples_1, "accuracies" : checkpoint_1["accu
 
 torch.save({
     "model_0_data" : model_0_data,
-    "model_1_data" : model_1_data
+    "model_1_data" : model_1_data,
+    "epsilons" : checkpoint_0["epsilons"]
 }, FINAL_DESTINATION)
 
 
