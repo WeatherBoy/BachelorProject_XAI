@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifardataset.
 
-# In[7]:
+# In[ ]:
 
 
 import torch
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[8]:
+# In[ ]:
 
 
 def msg(
@@ -78,7 +78,7 @@ def msg(
 
 # ## Downloading data
 
-# In[23]:
+# In[ ]:
 
 
 BATCH_SIZE = 32 #128
@@ -154,7 +154,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[24]:
+# In[ ]:
 
 
 cfg = {
@@ -264,7 +264,7 @@ class Model(nn.Module):
 
 # ### Weird classs - warmUp stuff
 
-# In[25]:
+# In[ ]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -288,7 +288,7 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[26]:
+# In[ ]:
 
 
 
