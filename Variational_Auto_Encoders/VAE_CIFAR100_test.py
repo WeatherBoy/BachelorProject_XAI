@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_6.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_6.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_7.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_7.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -158,6 +158,7 @@ classes = trainval_set.classes # or class_to_idx
 
 
 cfg = {
+    'Small': [16, 'M', 32, 'M', 32, 'M', 64, 'M', 64, 'M'],
     'VGG9': [64, 'M', 128, 'M', 256, 256, 'M', 512, 'M', 512, 'M'],
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -298,10 +299,10 @@ latent_dim = 10 #From 5 # hyperparameter
 WARMUP_ITERATIONS = 10
 WEIGHT_DECAY = 1e-4
 SGD_MOMENTUM = 0.9
-INITIAL_LR = 1e-3
+INITIAL_LR = 1e-4
 
 numEpochs = 100
-modeltype = 'VGG11'
+modeltype = 'Small'
 
 encoder = Encoder(modeltype,  input_dim=channel_size,     latent_dim=latent_dim).to(DEVICE)
 decoder = Decoder(modeltype,  latent_dim=latent_dim,   output_dim = channel_size).to(DEVICE)
