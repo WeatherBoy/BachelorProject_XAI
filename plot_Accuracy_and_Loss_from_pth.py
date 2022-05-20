@@ -44,17 +44,17 @@ paths = [
     "PLOT_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",                     # 6
     "PLOT_Transfer_Learning_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",   # 7
     "Transfer_Learning_EffNet_b7",                                                                                      # 8
-    "PLOT_CIFAR10_simple_network_4"
+    "PLOT_CIFAR10_simple_network_9"
 ]
 save_model_path = [path_from_good_directory(path) for path in paths]
 ###################################################################################################
 
 #%% Wich model should you show ####################################################################
 PATH = save_model_path[9]
-checkpoint = torch.load(PATH, map_location=torch.device(DEVICE))
+checkpoint = torch.load("C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/Transfer_Learning_EffNet_b7_weight_decay_1e9_1To1e4LR-75a0669a-bfa8-49c8-9464-e3814dc6b6cb/plot.pth", map_location=torch.device(DEVICE))
 ###################################################################################################
 
-#%% Plotting ######################################################################################
+#%% Plotting #######################################    ###############################################
 
 print(checkpoint)
 normal_plot = False

@@ -1,1 +1,1 @@
-C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/data/adversarial_imgs/data_with_good_indexing.pth
+C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/Transfer_Learning_EffNet_b7_weight_decay_1e9_1To1e4LR-75a0669a-bfa8-49c8-9464-e3814dc6b6cb/plot.pth

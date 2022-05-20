@@ -14,37 +14,8 @@ import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import get_network
+from utils import msg
 
-###################################################################################################
-
-#%% Dumb function #################################################################################
-
-def msg(
-    message: str,
-):
-    """
-    Input:
-        message (str): a message of type string, which will be printed to the terminal
-            with some decoration.
-
-    Description:
-        This function takes a message and prints it nicely
-
-    Output:
-        This function has no output, it prints directly to the terminal
-    """
-
-    # word_list makes sure that the output of msg is more readable
-    sentence_list = message.split(sep="\n")
-    # the max-function can apparently be utilised like this:
-    longest_sentence = max(sentence_list, key=len)
-
-    n = len(longest_sentence)
-    n2 = n // 2 - 1
-    print(">" * n2 + "  " + "<" * n2)
-    print(message)
-    print(">" * n2 + "  " + "<" * n2 + "\n")
 ###################################################################################################
 
 #%% Configuring device and general paths ##########################################################
@@ -59,11 +30,10 @@ DATA_PATH = GBAR_DATA_PATH if torch.cuda.is_available() else LOCAL_DATA_PATH
 
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
-NETWORK_ARCHITECTURE = "seresnet152"
-NAME = "seresnet152 well regularized"
-MODEL_PATH = "../trainedModels/seresnet152-170-best-good.pth"
+NAME = "Transfer_Learning_EffNet_b7_weight_decay_1e9_1To1e4LR"
+MODEL_PATH = "transferLearning_EffNet_CIFAR100.pth"
 VALUES_PATH = "values_for_plot.pth"
-PLOT_PATH = "seresnet152_well_regularized__unique-classifications.jpg"
+PLOT_PATH = NAME + "__unique-classifications.jpg"
 ###################################################################################################
 
 #%% Global variables (constants) ##################################################################
@@ -71,8 +41,6 @@ PLOT_PATH = "seresnet152_well_regularized__unique-classifications.jpg"
 BATCH_SIZE = 128
 RANDOM_SEED = 42
 NUM_WORKERS = 4
-CIFAR100_TRAIN_MEAN = torch.tensor([0.5070751592371323, 0.48654887331495095, 0.4409178433670343])
-CIFAR100_TRAIN_STD = torch.tensor([0.2673342858792401, 0.2564384629170883, 0.27615047132568404])
 
 # Setting seeds
 np.random.seed(RANDOM_SEED)
@@ -86,10 +54,7 @@ torch.cuda.manual_seed(RANDOM_SEED)
 test_set = torchvision.datasets.CIFAR100(
     root = DATA_PATH, 
     train = False, 
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(mean = CIFAR100_TRAIN_MEAN, std = CIFAR100_TRAIN_STD)
-    ])
+    transform = torchvision.transforms.ToTensor()
     )
 
 test_loader = torch.utils.data.DataLoader(
@@ -107,9 +72,24 @@ msg(f"succesfully initialised the test loader! \nThe number of test images: {num
 
 #%% Loading the model #############################################################################
 
-model = get_network(NETWORK_ARCHITECTURE).to(DEVICE)
+model = torchvision.models.efficientnet_b7(pretrained=False).to(DEVICE)
+
+class EfficentNet_N_classes(torch.nn.Module):
+    def __init__(self, class_features=100):
+        super().__init__()
+        model.classifier[1] = torch.nn.Linear(
+            in_features=2560,
+            out_features=class_features,
+            bias=True)
+        self.model = model
+    
+    def forward(self, x):
+        return self.model(x)
+
+model = EfficentNet_N_classes(class_features=len(classes)).to(DEVICE)
+
 checkpoint = torch.load(MODEL_PATH, map_location=torch.device(DEVICE))
-model.load_state_dict(checkpoint)
+model.load_state_dict(checkpoint["model_state_dict"])
 
 # Set the model in evaluation mode. In this case this is for the Dropout layers
 model.eval()

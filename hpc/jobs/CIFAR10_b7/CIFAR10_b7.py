@@ -23,7 +23,7 @@ MODEL_PATH = "../trainedModels/" + MODEL_NAME + ".pth"
 PLOT_PATH = "PLOT_" + MODEL_NAME + ".pth"
 MODEL_PATH_MOST_RECENT = "last_save_" + MODEL_NAME + ".pth"
 
-EPOCHS = 200
+EPOCHS = 100
 SGD_MOMENTUM = 0.9
 SGD_WEIGHT_DECAY = 1e-5
 INITIAL_LR = 5e-2
@@ -41,7 +41,7 @@ TRANSFORMED_DATA = True
 DATA_SET_NAME = "Cifar10"
 WARM_RESTART = False
 TRANSFER_LEARNING = False
-LR_SCHEDULE = "CosineAnnealingLR"
+LR_SCHEDULE = "ReduceLROnPlateau"
 
 
 # Device configuration
@@ -96,27 +96,21 @@ classes = org_train_set.classes # or class_to_idx
 
 #%% Model #########################################################################################
 
-class CNN(torch.nn.Module):
-    def __init__(self):
+model = torchvision.models.efficientnet_b7(pretrained=False).to(DEVICE)
+
+class EfficentNet_N_classes(torch.nn.Module):
+    def __init__(self, class_features=100):
         super().__init__()
-        self.conv1 = torch.nn.Conv2d(3, 6, 5)
-        self.pool = torch.nn.MaxPool2d(2, 2)
-        self.conv2 = torch.nn.Conv2d(6, 16, 5)
-        self.fc1 = torch.nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = torch.nn.Linear(120, 84)
-        self.fc3 = torch.nn.Linear(84, 10)
-
+        model.classifier[1] = torch.nn.Linear(
+            in_features=2560,
+            out_features=class_features,
+            bias=True)
+        self.model = model
+    
     def forward(self, x):
-        # I am quite certain that 
-        x = self.pool(torch.nn.functional.relu(self.conv1(x)))
-        x = self.pool(torch.nn.functional.relu(self.conv2(x)))
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
-        x = torch.nn.functional.relu(self.fc1(x))
-        x = torch.nn.functional.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        return self.model(x)
 
-model = CNN().to(DEVICE)
+model = EfficentNet_N_classes(class_features=len(classes)).to(DEVICE)
 ###################################################################################################
 
 #%% Loss function, optimizer & scheduler ###########################################################

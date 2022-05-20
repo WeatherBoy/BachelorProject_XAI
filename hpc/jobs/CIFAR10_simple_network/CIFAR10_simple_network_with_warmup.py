@@ -11,7 +11,7 @@ import torchvision
 
 import numpy as np
 
-from utils import msg, train_loop, test_loop
+from utils import msg, train_loop, test_loop, WarmUpLR
 ###################################################################################################
 
 #%% Global constants and configurations ###########################################################
@@ -23,15 +23,17 @@ MODEL_PATH = "../trainedModels/" + MODEL_NAME + ".pth"
 PLOT_PATH = "PLOT_" + MODEL_NAME + ".pth"
 MODEL_PATH_MOST_RECENT = "last_save_" + MODEL_NAME + ".pth"
 
-EPOCHS = 200
+EPOCHS = 100
 SGD_MOMENTUM = 0.9
 SGD_WEIGHT_DECAY = 1e-5
-INITIAL_LR = 5e-2
+INITIAL_LR = 1e-1
+MIN_LR = 1e-3
 NUM_WORKERS = 4
 BATCH_SIZE = 32
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 GRAD_CLIP = 1
+WARMUP_ITERATIONS = 2
 
 CIFAR100_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
 CIFAR100_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
@@ -39,7 +41,7 @@ CIFAR100_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
 # Import for plotting (configure yourself in accordance with alterations)
 TRANSFORMED_DATA = True
 DATA_SET_NAME = "Cifar10"
-WARM_RESTART = False
+WARM_RESTART = f"{WARMUP_ITERATIONS} epochs"
 TRANSFER_LEARNING = False
 LR_SCHEDULE = "CosineAnnealingLR"
 
@@ -126,10 +128,11 @@ loss_fn = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=INITIAL_LR, 
                             momentum=SGD_MOMENTUM, weight_decay=SGD_WEIGHT_DECAY)
 
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer = optimizer, mode='min',
-                                                       factor=0.1, patience=5, threshold=0.0001,
-                                                       threshold_mode='rel', cooldown=0, min_lr=0,
-                                                       eps=1e-08, verbose=False)
+iter_per_epoch = len(train_loader)
+warmup_scheduler = WarmUpLR(optimizer, iter_per_epoch * WARMUP_ITERATIONS) 
+
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer,
+                                T_max = EPOCHS-WARMUP_ITERATIONS, eta_min = MIN_LR, verbose=False)
 ###################################################################################################
 
 #%% Actual training ###########################################################
@@ -148,36 +151,41 @@ for epoch in range(0, EPOCHS):
     accuracyTrain, avglossTrain = train_loop(
         dataloader = train_loader,
         model = model,
+        epoch = epoch,
+        warmup_iterations = WARMUP_ITERATIONS,
         loss_fn = loss_fn,
         optimizer = optimizer,
         device = DEVICE,
+        warmup_scheduler = warmup_scheduler,
         gradient_clipping = GRAD_CLIP
         )
-    accuracyVal, avglossVal = test_loop(
+    accuracyTest, avglossTest = test_loop(
         dataloader = val_loader,
         model = model,
         loss_fn = loss_fn,
         device = DEVICE
         )
     
-    scheduler.step(avglossVal)  
+    if epoch > WARMUP_ITERATIONS:
+        # If we are past warmup - learning rate is updated.
+        scheduler.step()  
     
     # This is just extra for plotting
-    accuracies[0,epoch], accuracies[1,epoch] = accuracyVal, accuracyTrain
-    losses[0,epoch], losses[1,epoch] = avglossVal, avglossTrain
+    accuracies[0,epoch], accuracies[1,epoch] = accuracyTest, accuracyTrain
+    losses[0,epoch], losses[1,epoch] = avglossTest, avglossTrain
     
     learning_rate[epoch] = optimizer.param_groups[0]["lr"]
     
-    if avglossVal < best_loss:
+    if avglossTest < best_loss:
         # We only save a checkpoint if our model is performing better
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             }, MODEL_PATH)
-        best_loss = avglossVal
+        best_loss = avglossTest
         best_epoch = epoch
-        msg(f"New best loss is: {avglossVal} \nCheckpoint at epoch: {epoch + 1}")
+        msg(f"New best loss is: {avglossTest} \nCheckpoint at epoch: {epoch + 1}")
     else:
         msg("Only accuracies and losses (and LR) were updated")
     
