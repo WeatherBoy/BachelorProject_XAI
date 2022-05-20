@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_7.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_7.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_8.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_8.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -197,7 +197,7 @@ class Encoder(nn.Module):
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
                 layers += [nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
-                           #nn.BatchNorm2d(x),
+                           nn.BatchNorm2d(x),
                            nn.GELU()] # changed from ReLU
                 in_channels = x
         
@@ -230,7 +230,7 @@ class Decoder(nn.Module):
                 layers += [nn.ConvTranspose2d(cfg[i-1], cfg[i-1], kernel_size=2, stride=2)] # in decoder, we should upsample the image, instead of downsample it
             else:
                 layers += [nn.Conv2d(in_channels, cfg[i], kernel_size=3, padding=1),
-                           #nn.BatchNorm2d(cfg[i]),
+                           nn.BatchNorm2d(cfg[i]),
                            nn.GELU()] # changed from ReLU
                 in_channels = cfg[i]
         
@@ -299,7 +299,7 @@ latent_dim = 10 #From 5 # hyperparameter
 WARMUP_ITERATIONS = 10
 WEIGHT_DECAY = 1e-4
 SGD_MOMENTUM = 0.9
-INITIAL_LR = 1e-4
+INITIAL_LR = 1e-3
 
 numEpochs = 100
 modeltype = 'Small'
@@ -581,5 +581,4 @@ if not trained_model_exists or tryResumeTrain or startEpoch < (numEpochs - 1):
     
 else:
     msg("Have already trained this model once!")
-
 
