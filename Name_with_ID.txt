@@ -1,0 +1,3 @@
+0001 : plot_seresnet152_poorly_regularised
+0002 : plot_seresnet152_well_regularised
+0003 : EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6

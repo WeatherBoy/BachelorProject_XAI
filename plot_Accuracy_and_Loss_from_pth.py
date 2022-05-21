@@ -44,14 +44,17 @@ paths = [
     "PLOT_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",                     # 6
     "PLOT_Transfer_Learning_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300",   # 7
     "Transfer_Learning_EffNet_b7",                                                                                      # 8
-    "PLOT_CIFAR10_simple_network_9"
+    "PLOT_CIFAR10_simple_network_9",                                                                                    # 9
+    "PLOT_CIFAR10_b7",                                                                                                  # 10
+    "PLOT_CIFAR10_b7_without_regularization"
 ]
 save_model_path = [path_from_good_directory(path) for path in paths]
 ###################################################################################################
 
 #%% Wich model should you show ####################################################################
-PATH = save_model_path[9]
-checkpoint = torch.load("C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/Transfer_Learning_EffNet_b7_weight_decay_1e9_1To1e4LR-75a0669a-bfa8-49c8-9464-e3814dc6b6cb/plot.pth", map_location=torch.device(DEVICE))
+PATH = save_model_path[11]
+PATH = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/torchAttack#3_ResNet18_CIFAR100_manxi_parameters_epoch500-8bbe23ee-66a5-4186-8a3f-24b257e8125e/adversarial_ResNet18_cifar100.pth"
+checkpoint = torch.load(PATH, map_location=torch.device(DEVICE))
 ###################################################################################################
 
 #%% Plotting #######################################    ###############################################
