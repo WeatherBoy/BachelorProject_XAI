@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_mix2.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_mix2.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_mix3.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_mix3.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -434,10 +434,10 @@ else:
 
 
 def loss_function(x, x_hat, mean, log_var):
-    reproduction_loss = nn.MSELoss()(x_hat, x)
+    reproduction_loss = F.l1_loss(x_hat, x) #nn.MSELoss()(x_hat, x)
     #KLD      = - 0.5 * torch.sum(1+ log_var - mean.pow(2) - log_var.exp())
     KLD = torch.mean( -0.5 * torch.sum(1+ log_var - mean**2 - log_var.exp(),dim=1),dim = 0) # Mean loss for the whole batch
-    KLD *=  0.00025
+    KLD *= 0.00025
     
     #print(f"Reproduction: {reproduction_loss}, \tKLD: {KLD.item()}, \tscaled KLD: {(KLD * scale).item()}, \tlog_var: {log_var.sum()}")
     return reproduction_loss, KLD 
