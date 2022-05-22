@@ -491,7 +491,7 @@ def train_loop(model, loader, loss_fn, optimizer):
 
     return train_avg_repo, train_avg_KLD
 
-def test_loop(model, loader, loss_fn, KLD_scale):
+def test_loop(model, loader, loss_fn):
     model.eval()
 
     num_batches = len(loader)
@@ -504,7 +504,7 @@ def test_loop(model, loader, loss_fn, KLD_scale):
 
             # Compute loss
             x_hat, mean, log_var = model(x)
-            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
+            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var)
 
             val_avg_repo += loss_repo.item()
             val_avg_KLD += loss_KLD.item()
