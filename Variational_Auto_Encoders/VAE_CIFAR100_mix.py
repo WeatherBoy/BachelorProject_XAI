@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifar100 dataset. VAR inspired by [link](https://github.com/henryqin1997/vae-cifar10/blob/master/cifar10_vae.py)
 
-# In[40]:
+# In[3]:
 
 
 import torch
@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_mix1.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_mix1.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_mix2.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_mix2.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[41]:
+# In[4]:
 
 
 def msg(
@@ -78,10 +78,10 @@ def msg(
 
 # ## Downloading data
 
-# In[42]:
+# In[5]:
 
 
-BATCH_SIZE = 32 #128
+BATCH_SIZE = 128 # 32
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 NUM_WORKERS = 4
@@ -154,7 +154,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[43]:
+# In[6]:
 
 
 
@@ -272,7 +272,7 @@ class VAE(nn.Module):
 
 # ### Weird classs - warmUp stuff
 
-# In[44]:
+# In[7]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -296,27 +296,27 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[45]:
+# In[8]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 5 #From 5 # hyperparameter
+latent_dim = 256 #From 5 # hyperparameter
 
 WARMUP_ITERATIONS = 10
 WEIGHT_DECAY = 1e-4
 SGD_MOMENTUM = 0.9
 INITIAL_LR = 1e-3
 
-numEpochs = 100
-modeltype = 'VGG19'
-
-model = VAE(3,256).to(DEVICE)
+numEpochs = 80
 
 
-#optimizer = torch.optim.Adam(model.parameters(), lr = INITIAL_LR, weight_decay=WEIGHT_DECAY)#optim.SGD(model.parameters(), lr= lr)
-optimizer = torch.optim.SGD(model.parameters(), lr=INITIAL_LR, 
-                            momentum=SGD_MOMENTUM, weight_decay=WEIGHT_DECAY)
+model = VAE(channel_size,latent_dim).to(DEVICE)
+
+
+optimizer = torch.optim.Adam(model.parameters(), lr = INITIAL_LR, weight_decay=WEIGHT_DECAY)#optim.SGD(model.parameters(), lr= lr)
+#optimizer = torch.optim.SGD(model.parameters(), lr=INITIAL_LR, 
+#                            momentum=SGD_MOMENTUM, weight_decay=WEIGHT_DECAY)
 
 iter_per_epoch = len(train_loader)
 warmup_scheduler = WarmUpLR(optimizer, iter_per_epoch * WARMUP_ITERATIONS)        
@@ -325,14 +325,14 @@ scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=numEpochs-WARM
 
 
 print(f"hyperparameters are:")
-msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{INITIAL_LR} \nmodel type \t\t{modeltype}\nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE} \nWeight decay \t\t{WEIGHT_DECAY}\nWarmup \t\t\t{WARMUP_ITERATIONS}")
+msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{INITIAL_LR} \nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE} \nWeight decay \t\t{WEIGHT_DECAY}\nWarmup \t\t\t{WARMUP_ITERATIONS}")
 
 
 # In[46]:
 
 
 
-DimCheck = False
+DimCheck = True
 
 if DimCheck:
     x = torch.randn(2,3,32,32)
@@ -491,7 +491,7 @@ def train_loop(model, loader, loss_fn, optimizer):
 
     return train_avg_repo, train_avg_KLD
 
-def test_loop(model, loader, loss_fn):
+def test_loop(model, loader, loss_fn, KLD_scale):
     model.eval()
 
     num_batches = len(loader)
@@ -504,7 +504,7 @@ def test_loop(model, loader, loss_fn):
 
             # Compute loss
             x_hat, mean, log_var = model(x)
-            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var)
+            loss_repo, loss_KLD = loss_fn(x, x_hat, mean, log_var, KLD_scale)
 
             val_avg_repo += loss_repo.item()
             val_avg_KLD += loss_KLD.item()
