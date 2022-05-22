@@ -332,7 +332,7 @@ msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{INITIAL_LR} \nNumber
 
 
 
-DimCheck = True
+DimCheck = False
 
 if DimCheck:
     x = torch.randn(2,3,32,32)
