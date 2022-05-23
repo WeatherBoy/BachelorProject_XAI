@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_mix3.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_mix3.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_mix4.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_mix4.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -301,14 +301,14 @@ class WarmUpLR(_LRScheduler):
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 256 #From 5 # hyperparameter
+latent_dim = 200 #256 #From 5 # hyperparameter
 
 WARMUP_ITERATIONS = 10
 WEIGHT_DECAY = 1e-4
 SGD_MOMENTUM = 0.9
 INITIAL_LR = 1e-3
 
-numEpochs = 80
+numEpochs = 50
 
 
 model = VAE(channel_size,latent_dim).to(DEVICE)
