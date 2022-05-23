@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_mix4.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_mix4.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_mix5.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_mix5.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -81,7 +81,7 @@ def msg(
 # In[5]:
 
 
-BATCH_SIZE = 128 # 32
+BATCH_SIZE = 64#128 # 32
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 NUM_WORKERS = 4
