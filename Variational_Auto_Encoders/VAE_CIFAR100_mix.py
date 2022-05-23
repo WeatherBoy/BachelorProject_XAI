@@ -4,7 +4,7 @@
 # # VAE with the CIFAR100 dataset
 # Training of a VAE on the Cifar100 dataset. VAR inspired by [link](https://github.com/henryqin1997/vae-cifar10/blob/master/cifar10_vae.py)
 
-# In[56]:
+# In[31]:
 
 
 import torch
@@ -25,8 +25,8 @@ from os.path import exists
 ## !! For Checkpointing!!!
 
 # Path to saving the model
-save_model_path = "../trainedModels/VAE_CIFAR100_mix6.pth"
-save_loss_path = "../plottables/VAE_CIFAR100_mix6.pth"
+save_model_path = "../trainedModels/VAE_CIFAR100_mix7.pth"
+save_loss_path = "../plottables/VAE_CIFAR100_mix7.pth"
 
 ## WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # This boolean will completely wipe any past checkpoints or progress.
@@ -46,7 +46,7 @@ print(f"Using {DEVICE} device")
 
 # ### Message func
 
-# In[57]:
+# In[32]:
 
 
 def msg(
@@ -78,10 +78,10 @@ def msg(
 
 # ## Downloading data
 
-# In[58]:
+# In[33]:
 
 
-BATCH_SIZE = 64 #128 # 32
+BATCH_SIZE = 128 # 32
 VALIDATION_SPLIT = 0.2
 RANDOM_SEED = 42
 NUM_WORKERS = 4
@@ -96,9 +96,9 @@ CIFAR100_MEAN = [0.5070751592371323, 0.48654887331495095, 0.4409178433670343]
 CIFAR100_STD = [0.2673342858792401, 0.2564384629170883, 0.27615047132568404]
 
 transform_train = torchvision.transforms.Compose([
-        torchvision.transforms.RandomCrop(32, padding=4),
-        torchvision.transforms.RandomHorizontalFlip(),
-        torchvision.transforms.RandomRotation(15),
+        #torchvision.transforms.RandomCrop(32, padding=4),
+        #torchvision.transforms.RandomHorizontalFlip(),
+        #torchvision.transforms.RandomRotation(15),
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD)
     ])
@@ -154,7 +154,7 @@ classes = trainval_set.classes # or class_to_idx
 # 
 # Models from [here](https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py) and VAE structure from here [git](https://github.com/Jackson-Kang/Pytorch-VAE-tutorial)
 
-# In[59]:
+# In[34]:
 
 
 
@@ -272,7 +272,7 @@ class VAE(nn.Module):
 
 # ### Weird classs - warmUp stuff
 
-# In[60]:
+# In[35]:
 
 
 from torch.optim.lr_scheduler import _LRScheduler
@@ -296,12 +296,12 @@ class WarmUpLR(_LRScheduler):
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
-# In[61]:
+# In[37]:
 
 
 
 channel_size = test_set[0][0].shape[0] #Fixed, dim 0 is the feature channel number
-latent_dim = 200 #256 #From 5 # hyperparameter
+latent_dim = 256 #From 5 # hyperparameter
 
 WARMUP_ITERATIONS = 10
 WEIGHT_DECAY = 1e-4
@@ -328,7 +328,7 @@ print(f"hyperparameters are:")
 msg(f"latent space dim: \t{latent_dim} \nlearning rate \t\t{INITIAL_LR} \nNumber of epoch \t{numEpochs} \nBatch size \t\t{BATCH_SIZE} \nWeight decay \t\t{WEIGHT_DECAY}\nWarmup \t\t\t{WARMUP_ITERATIONS}")
 
 
-# In[62]:
+# In[36]:
 
 
 
