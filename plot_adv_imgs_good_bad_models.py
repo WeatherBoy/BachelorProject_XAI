@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 import random
 
 PATH = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/data/adversarial_imgs/data_with_good_indexing.pth"
+SAVE_PATH = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/Billeder/ADV_Examples/seresnet152/"
 NUM_ADV_EXAMPS = 5
-SEED = 3010
+SEED = 420
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -47,11 +48,14 @@ def msg(
 
 #%% Getting the data ##############################################################################
 dict_thingy = torch.load(PATH, map_location=torch.device(DEVICE))
+
 model_0_data = dict_thingy["model_0_data"]
 model_1_data = dict_thingy["model_1_data"]
 EPSILONS = dict_thingy["epsilons"]
 adv_examples_0 = model_0_data["examples"]
 adv_examples_1 = model_1_data["examples"]
+print("accuracies model 0:", model_0_data["accuracies"] )
+print("accuracies model 1:", model_1_data["accuracies"] )
 
 NUM_MATCHING_IMAGES = len(adv_examples_0[0]["initial_labels"])
 msg(f"Amount of images were both models initially classified correctly: {NUM_MATCHING_IMAGES}")
@@ -73,7 +77,7 @@ classes = trainval_set.classes # or class_to_idx
 
 def plot_adv_examps(adv_example, name):
     cnt = 0
-    fig = plt.figure(name, figsize=(8,10), )
+    fig = plt.figure(name, figsize=(9,8), )
     for i in range(len(EPSILONS)):
         for j in range(NUM_ADV_EXAMPS):
             cnt += 1
@@ -81,7 +85,7 @@ def plot_adv_examps(adv_example, name):
             plt.xticks([], [])
             plt.yticks([], [])
             if j == 0:
-                plt.ylabel("Eps: {}".format(round(EPSILONS[i].item(), 3)), fontsize=14)
+                plt.ylabel("Eps: {}".format(round(EPSILONS[i].item(), 3)), fontsize=12)
             
             examples = adv_example[i]
             initial_label = examples["initial_labels"][random_indices[j]]
@@ -91,10 +95,14 @@ def plot_adv_examps(adv_example, name):
             # CIFAR is complicated so we need to reshape and normalize..
             reshaped_adv_im = np.transpose(adv_im, (1, 2, 0))
             
-            plt.title("{} -> {}".format(classes[initial_label.item()], classes[final_label.item()]))
+            if i == 0:
+                plt.title(f"Original: {classes[initial_label.item()]} \nPredicted: {classes[final_label.item()]}")
+            else:
+                plt.title(f"Pred: {classes[final_label.item()]}")
             plt.imshow(reshaped_adv_im)
             
     plt.tight_layout()
+    plt.savefig(SAVE_PATH + "SEED_" + str(SEED) + "_" + name.replace(" ", "_") + ".png")
     plt.show()
 
 plot_adv_examps(adv_examples_0, "seresnet 152 well regularized")

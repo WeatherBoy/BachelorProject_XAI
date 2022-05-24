@@ -30,8 +30,8 @@ DATA_PATH = GBAR_DATA_PATH if torch.cuda.is_available() else LOCAL_DATA_PATH
 
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
-NAME = "0027_Transfer_Learning_EfficientNet_b7_ThirdAttempt_warm_restart_batch_128_LR1e1_to_1e5_weightDecay_1e6_Epochs_300"
-MODEL_PATH = "best_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300.pth"
+NAME = "0015_ResNet18_CIFAR100_with_validation"
+MODEL_PATH = "adversarial_ResNet18_cifar100.pth"
 VALUES_PATH = "values_for_plot.pth"
 PLOT_PATH = NAME + "__unique-classifications.jpg"
 ###################################################################################################
@@ -41,8 +41,6 @@ PLOT_PATH = NAME + "__unique-classifications.jpg"
 BATCH_SIZE = 128
 RANDOM_SEED = 42
 NUM_WORKERS = 4
-CIFAR100_TRAIN_MEAN = torch.tensor([0.5070751592371323, 0.48654887331495095, 0.4409178433670343])
-CIFAR100_TRAIN_STD = torch.tensor([0.2673342858792401, 0.2564384629170883, 0.27615047132568404])
 
 # Setting seeds
 np.random.seed(RANDOM_SEED)
@@ -56,10 +54,7 @@ torch.cuda.manual_seed(RANDOM_SEED)
 test_set = torchvision.datasets.CIFAR100(
     root = DATA_PATH, 
     train = False, 
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(mean = CIFAR100_TRAIN_MEAN, std = CIFAR100_TRAIN_STD)
-    ])
+    transform = torchvision.transforms.ToTensor()
     )
 
 test_loader = torch.utils.data.DataLoader(
@@ -77,26 +72,11 @@ msg(f"succesfully initialised the test loader! \nThe number of test images: {num
 
 #%% Loading the model #############################################################################
 
-model = torchvision.models.efficientnet_b7(pretrained=False).to(DEVICE)
-
 # Returns the resnet18 
-class EfficentNet_N_classes(torch.nn.Module):
-    def __init__(self, class_features=100):
-        super().__init__()
-        model.classifier[1] = torch.nn.Linear(
-            in_features=2560,
-            out_features=class_features,
-            bias=True)
-        self.model = model
-    
-    def forward(self, x):
-        return self.model(x)
-
-model = EfficentNet_N_classes(class_features=len(classes)).to(DEVICE)
+model = torchvision.models.resnet18(pretrained=False).to(DEVICE)
 
 checkpoint = torch.load(MODEL_PATH, map_location=torch.device(DEVICE))
 model.load_state_dict(checkpoint["model_state_dict"])
-
 
 # Set the model in evaluation mode. In this case this is for the Dropout layers
 model.eval()
