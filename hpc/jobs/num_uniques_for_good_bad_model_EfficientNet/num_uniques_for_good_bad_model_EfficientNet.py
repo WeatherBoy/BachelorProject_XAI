@@ -14,37 +14,8 @@ import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import get_network
+from utils import msg
 
-###################################################################################################
-
-#%% Dumb function #################################################################################
-
-def msg(
-    message: str,
-):
-    """
-    Input:
-        message (str): a message of type string, which will be printed to the terminal
-            with some decoration.
-
-    Description:
-        This function takes a message and prints it nicely
-
-    Output:
-        This function has no output, it prints directly to the terminal
-    """
-
-    # word_list makes sure that the output of msg is more readable
-    sentence_list = message.split(sep="\n")
-    # the max-function can apparently be utilised like this:
-    longest_sentence = max(sentence_list, key=len)
-
-    n = len(longest_sentence)
-    n2 = n // 2 - 1
-    print(">" * n2 + "  " + "<" * n2)
-    print(message)
-    print(">" * n2 + "  " + "<" * n2 + "\n")
 ###################################################################################################
 
 #%% Configuring device and general paths ##########################################################
@@ -59,11 +30,10 @@ DATA_PATH = GBAR_DATA_PATH if torch.cuda.is_available() else LOCAL_DATA_PATH
 
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
-NETWORK_ARCHITECTURE = "seresnet152"
-NAME = "seresnet152 poorly regularized"
-MODEL_PATH = "../trainedModels/seresnet152-148-best-bad.pth"
+NAME = "0027_Transfer_Learning_EfficientNet_b7_ThirdAttempt_warm_restart_batch_128_LR1e1_to_1e5_weightDecay_1e6_Epochs_300"
+MODEL_PATH = "best_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300.pth"
 VALUES_PATH = "values_for_plot.pth"
-PLOT_PATH = "seresnet152_poorly_regularized__unique-classifications.jpg"
+PLOT_PATH = NAME + "__unique-classifications.jpg"
 ###################################################################################################
 
 #%% Global variables (constants) ##################################################################
@@ -107,9 +77,26 @@ msg(f"succesfully initialised the test loader! \nThe number of test images: {num
 
 #%% Loading the model #############################################################################
 
-model = get_network(NETWORK_ARCHITECTURE).to(DEVICE)
+model = torchvision.models.efficientnet_b7(pretrained=False).to(DEVICE)
+
+# Returns the resnet18 
+class EfficentNet_N_classes(torch.nn.Module):
+    def __init__(self, class_features=100):
+        super().__init__()
+        model.classifier[1] = torch.nn.Linear(
+            in_features=2560,
+            out_features=class_features,
+            bias=True)
+        self.model = model
+    
+    def forward(self, x):
+        return self.model(x)
+
+model = EfficentNet_N_classes(class_features=len(classes)).to(DEVICE)
+
 checkpoint = torch.load(MODEL_PATH, map_location=torch.device(DEVICE))
-model.load_state_dict(checkpoint)
+model.load_state_dict(checkpoint["model_state_dict"])
+
 
 # Set the model in evaluation mode. In this case this is for the Dropout layers
 model.eval()
@@ -196,7 +183,7 @@ def test(model, device, test_loader, epsilon):
 #%% We run the attack #####################################################################
 # This also saves some values, so that we can see how the accuracy falls along with greater epsilon (error) rates.
 
-NUM_EPSILONS = 15
+NUM_EPSILONS = 5
 EPSILONS = torch.linspace(0, 0.1, NUM_EPSILONS + 1)
 # TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 # I think this is redundant 

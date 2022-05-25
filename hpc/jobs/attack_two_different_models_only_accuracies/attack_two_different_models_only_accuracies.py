@@ -99,13 +99,8 @@ def fgsm_attack(image, epsilon, data_grad):
 def test(model, device, test_loader, epsilon, detransform_func = lambda x: x):
     # Manxi's superior testing function
     
-    adv_examples = []
-    adv_imgs = []
-    adv_initial_labels = []
-    adv_final_labels = []
     final_predictions = []
     initial_predictions = []
-    targets = []
     
     # Loop over all examples in test set
     for data, target in test_loader:
@@ -146,42 +141,19 @@ def test(model, device, test_loader, epsilon, detransform_func = lambda x: x):
 
         # Check for success
         _, final_pred_index = final_output.max(1, keepdim=True) # get the index of the max log-probability
-        
-        adv_ex = perturbed_data.detach()
-        adv_ex_denormalized = detransform_func(adv_ex)
-        
-        adv_imgs.append(adv_ex_denormalized)
-        adv_initial_labels.append(init_pred_index.detach())
-        adv_final_labels.append(final_pred_index.detach())
-        targets.append(target.detach())
 
         initial_predictions.append(init_pred_index.flatten().detach().cpu().numpy())
         final_predictions.append(final_pred_index.flatten().detach().cpu().numpy())
         
-    # Calculate final accuracy for this epsilon
-    # final_acc = correct/float(len(test_loader)) # This is for computing the accuracy over batches
-    # We usually compute the accuracy over instances
     final_predictions = np.concatenate(final_predictions, axis=0)
     initial_predictions = np.concatenate(initial_predictions, axis=0)
     correct = np.sum(final_predictions == initial_predictions)
-    final_acc = correct / len(initial_predictions)
-        
-    adv_initial_labels = torch.cat(adv_initial_labels, dim=0).cpu().numpy()
-    adv_final_labels = torch.cat(adv_final_labels, dim=0).cpu().numpy()
-    targets = torch.cat(targets, dim=0).cpu().numpy()
-    
-    # making sure it actually has the dimensionality we desire!
-    adv_imgs =  torch.cat(adv_imgs, dim=0).detach().cpu().numpy()
-    
-    adv_examples = {"initial_labels" : adv_initial_labels,
-                    "final_labels" : adv_final_labels,
-                    "adversarial_images" : adv_imgs,
-                    "targets" : targets}    
+    final_acc = correct / len(initial_predictions)    
     
     print(f"Epsilon: {round(epsilon.item(), 3)}\tTest Accuracy = {correct} / {len(initial_predictions)} = {final_acc}")
 
     # Return the accuracy and an adversarial example
-    return final_acc, adv_examples
+    return final_acc, # adv_examples
 ###################################################################################################
 
 #%% Loading the first model #######################################################################
@@ -203,8 +175,8 @@ invert_normalization = torchvision.transforms.Compose([
         torchvision.transforms.Normalize(mean = -1*CIFAR100_TRAIN_MEAN, std = [1,1,1])
     ])
 
-NUM_EPSILONS = 5
-EPSILONS = torch.linspace(0, 0.1, NUM_EPSILONS + 1)
+NUM_EPSILONS = 15
+EPSILONS = torch.linspace(0, 0.3, NUM_EPSILONS + 1)
 ###################################################################################################
 
 #%% We run the first attack #######################################################################
@@ -212,23 +184,20 @@ EPSILONS = torch.linspace(0, 0.1, NUM_EPSILONS + 1)
 # (error) rates.
 
 accuracies_0 = []
-examples_0 = []
 
 # Run test for each epsilon
 for indx, eps in enumerate(EPSILONS):
-    acc, ex = test(model, DEVICE, test_loader, eps, detransform_func = invert_normalization)
+    acc = test(model, DEVICE, test_loader, eps, detransform_func = invert_normalization)
     accuracies_0.append(acc)
-    examples_0.append(ex)
 
 torch.save({
     "accuracies" : accuracies_0,
-    "examples" : examples_0,
     "epsilons" : EPSILONS
     }, ATTACK_PATH_0)
 
 # Wiping everything from the GPU, so that we don't get
 # into issues of using too much RAM.
-del accuracies_0, examples_0
+del accuracies_0
 torch.cuda.empty_cache()    
 ###################################################################################################
 
@@ -248,23 +217,20 @@ msg("Loaded model and put it in evaluation-mode.")
 # (error) rates.
 
 accuracies_1 = []
-examples_1 = []
 
 # Run test for each epsilon
 for indx, eps in enumerate(EPSILONS):
-    acc, ex = test(model, DEVICE, test_loader, eps, detransform_func = invert_normalization)
+    acc = test(model, DEVICE, test_loader, eps, detransform_func = invert_normalization)
     accuracies_1.append(acc)
-    examples_1.append(ex)   
     
 torch.save({
     "accuracies" : accuracies_1,
-    "examples" : examples_1,
     "epsilons" : EPSILONS
     }, ATTACK_PATH_1)  
   
 # Wiping everything from the GPU, so that we don't get
 # into issues of using too much RAM.
-del accuracies_1, examples_1
+del accuracies_1
 torch.cuda.empty_cache() 
 ###################################################################################################
 
@@ -274,77 +240,10 @@ final_examples_1 = []
 
 checkpoint_0 = torch.load(ATTACK_PATH_0, map_location=torch.device(DEVICE))
 checkpoint_1 = torch.load(ATTACK_PATH_1, map_location=torch.device(DEVICE))
-examples_0 = checkpoint_0["examples"]
-examples_1 = checkpoint_1["examples"]
-
-for i, _ in enumerate(examples_0):
-    initial_labels_0 = examples_0[i]["initial_labels"]
-    initial_labels_1 = examples_1[i]["initial_labels"]
-    print("shape of initial_labels 0:")
-    print(initial_labels_0.shape)
-    print("shape of initial_labels 1:")
-    print(initial_labels_1.shape)
-    
-    targets_0 = examples_0[i]["targets"]
-    targets_1 = examples_1[i]["targets"]
-    print("shape of targets 0:")
-    print(targets_0.shape)
-    print("shape of targets 1:")
-    print(targets_1.shape)
-    
-    indx_0 =    initial_labels_0.flatten() == targets_0   
-    indx_1 =    initial_labels_1.flatten() == targets_1
-    indx =      np.logical_and(indx_0, indx_1)
-    
-    try:
-        print("Shape of index:")
-        print(indx.shape)
-    except:
-        print("size of index:")
-        print(indx.size)
-    
-    # post attack labels
-    final_labels_0 = examples_0[i]["final_labels"]
-    final_labels_1 = examples_1[i]["final_labels"]
-    
-    # images
-    adv_imgs_0 = examples_0[i]["adversarial_images"]
-    adv_imgs_1 = examples_1[i]["adversarial_images"]
-    print("BEFORE indexing!")
-    print("shape of adversarial images 0:")
-    print(adv_imgs_0.shape)
-    print("shape of adversarial images 1:")
-    print(adv_imgs_1.shape)
-    
-    # indexing all of them
-    initial_labels_0 = initial_labels_0[indx]
-    initial_labels_1 = initial_labels_1[indx]
-    
-    final_labels_0 = final_labels_0[indx]
-    final_labels_1 = final_labels_1[indx]
-    
-    adv_imgs_0 = adv_imgs_0[indx, ...]
-    adv_imgs_1 = adv_imgs_1[indx, ...]
-    
-    print("AFTER indexing!")
-    print("shape of adversarial images 0:")
-    print(adv_imgs_0.shape)
-    print("shape of adversarial images 1:")
-    print(adv_imgs_1.shape)
-    
-    final_examples_0.append({"initial_labels" : initial_labels_0, "final_labels" : final_labels_0, "adversarial_images" : adv_imgs_0})
-    final_examples_1.append({"initial_labels" : initial_labels_1, "final_labels" : final_labels_1, "adversarial_images" : adv_imgs_1})
-
-model_0_data = {"examples" : final_examples_0, "accuracies" : checkpoint_0["accuracies"]} 
-model_1_data = {"examples" : final_examples_1, "accuracies" : checkpoint_1["accuracies"]}
 
 torch.save({
-    "model_0_data" : model_0_data,
-    "model_1_data" : model_1_data,
+    "accuracies_0" : checkpoint_0["accuracies"],
+    "accuracies_1" : checkpoint_1["accuracies"],
     "epsilons" : checkpoint_0["epsilons"]
 }, FINAL_DESTINATION)
-
-
-# delete those two intermediary saves I made!
-os.remove(ATTACK_PATH_0); os.remove(ATTACK_PATH_1)
     

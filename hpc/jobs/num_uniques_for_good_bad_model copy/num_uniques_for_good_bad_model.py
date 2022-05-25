@@ -60,10 +60,10 @@ DATA_PATH = GBAR_DATA_PATH if torch.cuda.is_available() else LOCAL_DATA_PATH
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
 NETWORK_ARCHITECTURE = "seresnet152"
-NAME = "seresnet152 poorly regularized"
-MODEL_PATH = "../trainedModels/seresnet152-148-best-bad.pth"
+NAME = "seresnet152 well regularized"
+MODEL_PATH = "../trainedModels/seresnet152-170-best-good.pth"
 VALUES_PATH = "values_for_plot.pth"
-PLOT_PATH = "seresnet152_poorly_regularized__unique-classifications.jpg"
+PLOT_PATH = "seresnet152_well_regularized__unique-classifications.jpg"
 ###################################################################################################
 
 #%% Global variables (constants) ##################################################################
@@ -197,7 +197,7 @@ def test(model, device, test_loader, epsilon):
 # This also saves some values, so that we can see how the accuracy falls along with greater epsilon (error) rates.
 
 NUM_EPSILONS = 15
-EPSILONS = torch.linspace(0, 0.1, NUM_EPSILONS + 1)
+EPSILONS = torch.linspace(0, 0.3, NUM_EPSILONS + 1)
 # TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 # I think this is redundant 
 EPSILON_STEP_SIZE = EPSILONS[1].item()

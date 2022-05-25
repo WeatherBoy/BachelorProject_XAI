@@ -9,13 +9,12 @@ import numpy as np
 ###################################################################################################
 
 #%% Global constants  and configuration ###########################################################
-FINAL_EPSILON = 0.1
 
 FIGURE_NAME = "mean_unique_classifications_together"
-PATHS = ["boxplot_seresnet152_well_regularized_eps_",
-         "boxplot_seresnet152_poorly_regularized_eps_",
-         "boxplot_ID_15_ResNet18_eps_",
-         "boxplot_ID_27_EfficientNet_b7_eps_"
+PATHS = ["boxplot_seresnet152_well_regularized",
+         "boxplot_seresnet152_poorly_regularized",
+         "boxplot_ID_15_ResNet18",
+         "boxplot_ID_27_EfficientNet_b7"
          #"boxplot_Transfer_Learning_EffNet_b7_weight_decay_1e9_1To1e4LR",
          #"boxplot_EfficientNet_b7_SecondAttempt_warm_restart_BIG2smallLR_weightDecay_1e6",
          ]
@@ -37,9 +36,9 @@ print(f"Using {DEVICE} device")
 
 #%% getting data ##################################################################################
 
-def path_from_good_directory(model_name : str, final_epsilon : float):
+def path_from_good_directory(model_name : str):
     good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
-    return good_dir + model_name + str(final_epsilon).replace(".", "") + ".pth"
+    return good_dir + model_name + ".pth"
 
 """
 dict_thingy = torch.load(path_from_good_directory(PATH_NAME), map_location=torch.device(DEVICE))
@@ -53,33 +52,21 @@ print(mean_unique_occurences)
 
 #%% Plotting ######################################################################################
 
-deltas = np.linspace(-0.075, 0.025, 4)
-
 fig = plt.figure(FIGURE_NAME, figsize=(12,4))
 fig.patch.set_facecolor('white')
 for indx, path in enumerate(PATHS):
-    dict_thingy = torch.load(path_from_good_directory(path, FINAL_EPSILON), map_location=torch.device(DEVICE))
+    dict_thingy = torch.load(path_from_good_directory(path), map_location=torch.device(DEVICE))
     epsilons = [round(epsilon.item(), 3) for epsilon in dict_thingy["EPSILONS"]]
     mean_unique_occurences = dict_thingy["mean_unique_occurences"]
     unique_occurences = dict_thingy["unique_occurences"]
-    x_positions = np.array(range(1,  len(epsilons) + 1))
+    x_positions = np.array(range(1, len(epsilons) + 1))
     
-    #print(NAMES[indx])
     lower_quantiles = np.quantile(unique_occurences, 0.25, axis = 1) 
     upper_quantiles = np.quantile(unique_occurences, 0.75, axis = 1)
     
-    # Stupid solution, but hopefully it works!
-    for idx, unique_occurence in enumerate(mean_unique_occurences):
-        temp1, temp2 = 0, 0
-        if lower_quantiles[idx] < unique_occurence:
-            temp1 = np.absolute(unique_occurence - lower_quantiles[idx])
-        if unique_occurence < upper_quantiles[idx]:
-            temp2 = np.absolute(unique_occurence - upper_quantiles[idx])
-        
-        x_vals = [x_positions[idx] + deltas[indx], x_positions[idx] + deltas[indx]]
-        plt.plot(x_vals, [unique_occurence + temp2, unique_occurence - temp1], color = COLOURS[indx], linewidth = 1.2)
-    
-    plt.plot(x_positions, mean_unique_occurences, color = COLOURS[indx], label = NAMES[indx], linewidth = 2.0)
+    plt.plot(x_positions, lower_quantiles, alpha = 0.5, color = COLOURS[indx], linewidth = 1.0, linestyle = "--")
+    plt.plot(x_positions, mean_unique_occurences, color = COLOURS[indx], linewidth = 2.0, label = NAMES[indx])
+    plt.plot(x_positions, upper_quantiles, alpha = 0.5, color = COLOURS[indx], linewidth = 1.0, linestyle = "--")
     
 plt.xticks(x_positions, epsilons)
 plt.xlabel("Epsilons")
