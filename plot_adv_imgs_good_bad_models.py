@@ -105,7 +105,7 @@ def plot_adv_examps(adv_example, name):
                 plt.ylabel("Eps: {}".format(round(EPSILONS[i].item(), 3)), fontsize=12)
             
             examples = adv_example[i]
-            initial_label = examples["initial_labels"][random_indices[j]]
+            # initial_label = examples["initial_labels"][random_indices[j]]
             final_label = examples["final_labels"][random_indices[j]]
             adv_im = examples["adversarial_images"][random_indices[j]]
             

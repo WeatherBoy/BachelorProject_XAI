@@ -14,7 +14,8 @@ from os.path import exists
 # this is a magic tool that will come in handy later ;)
 model_name = "efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300.pth"
 #MODEL_PATH = "../trainedModels/" + model_name
-MODEL_PATH = "best_" + model_name
+MODEL_PATH_BEST_ACC = "best_acc_" + model_name
+MODEL_PATH_BEST_LOSS = "best_loss_" + model_name
 MODEL_PATH_MOST_RECENT = "last_save_" + model_name
 PLOT_PATH = "PLOT_efficientnet_b7_cifar100_warm_restart_batch_128_LR1e1_to_1e6_weightDecay_1e6_Epochs_300.pth"
 
@@ -70,7 +71,7 @@ CIFAR100_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
 CIFAR100_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
 
 msg(f"working directory: {os.getcwd()}")
-DATA_PATH = '..data/datasetCIFAR100'
+DATA_PATH = '../data/datasetCIFAR100'
 
 # Setting seeds ###################################################################################
 np.random.seed(RANDOM_SEED)
@@ -145,23 +146,23 @@ losses = np.zeros((2, EPOCHS))
 learning_rate = np.zeros(EPOCHS)
             
 # exists is a function from os.path (standard library)
-trained_model_exists = exists(MODEL_PATH)
+trained_model_exists = exists(MODEL_PATH_MOST_RECENT)
 
 if trained_model_exists:
     if completely_restart_train:
-        os.remove(MODEL_PATH)
+        os.remove(MODEL_PATH_MOST_RECENT)
         startEpoch = 0
         msg("Previous model was deleted. \nRestarting training.")
     else:
         import collections
-        if not (type(torch.load(MODEL_PATH)) is collections.OrderedDict):
+        if not (type(torch.load(MODEL_PATH_MOST_RECENT)) is collections.OrderedDict):
             ## If it looks stupid but works it ain't stupid B)
             #
             # I think if it isn't that datatype, then it saved the Alex-way
             # and then we can load stuff.
             # Because if it is that datatype then it is for sure "just" the state_dict.
             
-            checkpoint = torch.load(MODEL_PATH)
+            checkpoint = torch.load(MODEL_PATH_MOST_RECENT)
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             
@@ -198,7 +199,7 @@ if trained_model_exists:
                 while userInput.lower() != 'y' and userInput.lower != 'n':
                     userInput = input("You must input either 'y' (yes) or 'n' (no):\t")
                 if userInput.lower() == "y":
-                    os.remove(MODEL_PATH)
+                    os.remove(MODEL_PATH_MOST_RECENT)
                     startEpoch = 0
                     msg("Previous model was deleted. \nRestarting training!")
                 elif userInput.lower() == "n":
@@ -282,7 +283,8 @@ def test_loop(dataloader, model, loss_fn):
 # We train if we haven't already trained
 # or we want to train again.
 if not trained_model_exists or try_resume_train or startEpoch < (EPOCHS - 1):
-    best_loss = 0
+    best_acc = 0
+    best_loss = 100
     best_epoch = 0
     
     msg("Will now begin training!")
@@ -297,17 +299,32 @@ if not trained_model_exists or try_resume_train or startEpoch < (EPOCHS - 1):
         
         learning_rate[epoch] = optimizer.param_groups[0]["lr"]
         
-        if avglossTest < best_loss:
+        only_learning_curves_updated = True
+        if  best_acc < accuracyTest:
+            only_learning_curves_updated = False
             # We only save a checkpoint if our model is performing better
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                }, MODEL_PATH)
+                }, MODEL_PATH_BEST_ACC)
+            best_acc = accuracyTest
+            best_epoch = epoch
+            msg(f"New best acc is: {best_acc} \nCheckpoint at epoch: {epoch + 1}")
+            
+        if avglossTest < best_loss:
+            only_learning_curves_updated = False
+             # We only save a checkpoint if our model is performing better
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                }, MODEL_PATH_BEST_LOSS)
             best_loss = avglossTest
             best_epoch = epoch
-            msg(f"New best loss is: {avglossTest} \nCheckpoint at epoch: {epoch + 1}")
-        else:
+            msg(f"New best loss is: {best_loss} \nCheckpoint at epoch: {epoch + 1}")
+            
+        if only_learning_curves_updated:
             msg("Only accuracies and losses (and LR) were updated")
         
         # TODO: learning rate was a late addition and as such it isn't handled
@@ -320,12 +337,12 @@ if not trained_model_exists or try_resume_train or startEpoch < (EPOCHS - 1):
         torch.save({'accuracies' : accuracies,
                     'losses' : losses,
                     'learning_rate' : learning_rate}, PLOT_PATH)
-        
-    torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            }, MODEL_PATH)        
+        torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                }, MODEL_PATH_MOST_RECENT) 
+           
     msg(f"Done! Final model was saved to: \n'{MODEL_PATH_MOST_RECENT}'")
     
 else:

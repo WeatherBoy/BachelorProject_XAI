@@ -10,6 +10,7 @@ import numpy as np
 
 #%% Global constants  and configuration ###########################################################
 FINAL_EPSILON = 0.1
+FINE = True
 
 FIGURE_NAME = "mean_unique_classifications_together"
 PATHS = ["boxplot_seresnet152_well_regularized_eps_",
@@ -37,9 +38,12 @@ print(f"Using {DEVICE} device")
 
 #%% getting data ##################################################################################
 
-def path_from_good_directory(model_name : str, final_epsilon : float):
+def path_from_good_directory(model_name : str, final_epsilon : float, fine : bool):
+    fineness = ""
+    if fine:
+        fineness = "_fine"
     good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
-    return good_dir + model_name + str(final_epsilon).replace(".", "") + ".pth"
+    return good_dir + model_name + str(final_epsilon).replace(".", "") + fineness + ".pth"
 
 """
 dict_thingy = torch.load(path_from_good_directory(PATH_NAME), map_location=torch.device(DEVICE))
@@ -53,12 +57,12 @@ print(mean_unique_occurences)
 
 #%% Plotting ######################################################################################
 
-deltas = np.linspace(-0.075, 0.025, 4)
+deltas = np.linspace(-0.125, 0.125, 4)
 
-fig = plt.figure(FIGURE_NAME, figsize=(12,4))
+fig = plt.figure(FIGURE_NAME, figsize=(14,4))
 fig.patch.set_facecolor('white')
 for indx, path in enumerate(PATHS):
-    dict_thingy = torch.load(path_from_good_directory(path, FINAL_EPSILON), map_location=torch.device(DEVICE))
+    dict_thingy = torch.load(path_from_good_directory(path, FINAL_EPSILON, FINE), map_location=torch.device(DEVICE))
     epsilons = [round(epsilon.item(), 3) for epsilon in dict_thingy["EPSILONS"]]
     mean_unique_occurences = dict_thingy["mean_unique_occurences"]
     unique_occurences = dict_thingy["unique_occurences"]
@@ -70,22 +74,23 @@ for indx, path in enumerate(PATHS):
     
     # Stupid solution, but hopefully it works!
     for idx, unique_occurence in enumerate(mean_unique_occurences):
-        temp1, temp2 = 0, 0
-        if lower_quantiles[idx] < unique_occurence:
-            temp1 = np.absolute(unique_occurence - lower_quantiles[idx])
-        if unique_occurence < upper_quantiles[idx]:
-            temp2 = np.absolute(unique_occurence - upper_quantiles[idx])
-        
-        x_vals = [x_positions[idx] + deltas[indx], x_positions[idx] + deltas[indx]]
-        plt.plot(x_vals, [unique_occurence + temp2, unique_occurence - temp1], color = COLOURS[indx], linewidth = 1.2)
+        if idx % 2 == 0:
+            temp1, temp2 = 0, 0
+            if lower_quantiles[idx] < unique_occurence:
+                temp1 = np.absolute(unique_occurence - lower_quantiles[idx])
+            if unique_occurence < upper_quantiles[idx]:
+                temp2 = np.absolute(unique_occurence - upper_quantiles[idx])
+            
+            x_vals = [x_positions[idx] + deltas[indx], x_positions[idx] + deltas[indx]]
+            plt.plot(x_vals, [unique_occurence + temp2, unique_occurence - temp1], color = COLOURS[indx], linewidth = 1.2)
     
-    plt.plot(x_positions, mean_unique_occurences, color = COLOURS[indx], label = NAMES[indx], linewidth = 2.0)
+    plt.plot(x_positions, mean_unique_occurences, color = COLOURS[indx], label = NAMES[indx], linewidth = 2.5)
     
 plt.xticks(x_positions, epsilons)
-plt.xlabel("Epsilons")
-plt.ylabel("#Unique classifications")
-plt.title(FIGURE_NAME)
-plt.legend(loc = "upper left") 
+plt.xlabel("Epsilons", fontsize=14)
+plt.ylabel("#Unique classifications", fontsize=14)
+plt.title(FIGURE_NAME, fontsize=16)
+plt.legend(loc = "upper left", fontsize=12) 
 plt.tight_layout()
 plt.grid()
 plt.show()

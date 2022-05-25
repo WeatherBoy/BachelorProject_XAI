@@ -31,8 +31,8 @@ DATA_PATH = GBAR_DATA_PATH if torch.cuda.is_available() else LOCAL_DATA_PATH
 # Path for where we save the model
 # this is a magic tool that will come in handy later ;)
 NAME = "0015_ResNet18_CIFAR100_with_validation"
-MODEL_PATH = "adversarial_ResNet18_cifar100.pth"
-VALUES_PATH = "values_for_plot.pth"
+MODEL_PATH = "../trainedModels/ID_15_ResNet18_cifar100.pth"
+VALUES_PATH = "boxplot_ID_15_ResNet18_eps_01_fine.pth"
 PLOT_PATH = NAME + "__unique-classifications.jpg"
 ###################################################################################################
 
@@ -163,7 +163,7 @@ def test(model, device, test_loader, epsilon):
 #%% We run the attack #####################################################################
 # This also saves some values, so that we can see how the accuracy falls along with greater epsilon (error) rates.
 
-NUM_EPSILONS = 5
+NUM_EPSILONS = 15
 EPSILONS = torch.linspace(0, 0.1, NUM_EPSILONS + 1)
 # TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 # I think this is redundant 

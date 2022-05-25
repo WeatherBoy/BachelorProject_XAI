@@ -56,15 +56,15 @@ classes = trainval_set.classes # or class_to_idx
 try:
     accuracies0 = dict_thingy["accuracies_0"]
     accuracies1 = dict_thingy["accuracies_1"]
-    plt.figure(figsize=(12,4))
+    plt.figure(figsize=(12,5))
     plt.plot(EPSILONS, accuracies0, "*-", label="Well regularized (ID: 2)")
     plt.plot(EPSILONS, accuracies1, "o-", label="Poorly regularized (ID: 1)")
-    plt.yticks(np.arange(0, 1.1, step=0.1))
-    plt.xticks(np.arange(0, torch.max(EPSILONS) + EPSILON_STEP_SIZE, step=EPSILON_STEP_SIZE))
-    plt.title("SEResNet152 well VS. poorly regularized")
-    plt.xlabel("Epsilon")
-    plt.ylabel("Accuracy")
-    plt.legend()
+    plt.yticks(np.arange(0, 1.2, step=0.2), fontsize=12)
+    plt.xticks(np.arange(0, torch.max(EPSILONS) + EPSILON_STEP_SIZE, step=EPSILON_STEP_SIZE)[::3], fontsize=12)
+    plt.title("SEResNet152 well VS. poorly regularized", fontsize=16)
+    plt.xlabel("Epsilon", fontsize=14)
+    plt.ylabel("Accuracy", fontsize=14)
+    plt.legend(fontsize=16)
     plt.show()
 except:
     print("There were no accuracies!")
