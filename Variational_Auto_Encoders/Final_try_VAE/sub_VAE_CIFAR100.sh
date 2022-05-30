@@ -25,8 +25,8 @@
 #BSUB -N 
 ### -- Specify the output and error file. %J is the job-id -- 
 ### -- -o and -e mean append, -oo and -eo mean overwrite -- 
-#BSUB -oo Output_files/Output_VGG19.out 
-#BSUB -eo Output_files/Error_VGG19.err
+#BSUB -oo Output_VGG19.out 
+#BSUB -eo Error_VGG19.err
 
 # here follow the commands you want to execute 
 
@@ -34,4 +34,4 @@
 
 source /zhome/06/a/147115/BSc_venv/bin/activate
 
-/zhome/06/a/147115/BSc_venv/bin/python3 -u /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/Variational_Auto_Encoders/VAE_CIFAR100_test.py > /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/Variational_Auto_Encoders/Output_files/outputVGG.txt
+/zhome/06/a/147115/BSc_venv/bin/python3 -u /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/Variational_Auto_Encoders/Final_try_VAE/VAE_CIFAR100.py > /zhome/06/a/147115/BSc_venv/BachelorProject_XAI/Variational_Auto_Encoders/Final_try_VAE/output_Final.txt
