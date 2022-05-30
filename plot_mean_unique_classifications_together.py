@@ -9,10 +9,10 @@ import numpy as np
 ###################################################################################################
 
 #%% Global constants  and configuration ###########################################################
-FINAL_EPSILON = 0.1
+FINAL_EPSILON = 0.3
 FINE = True
 
-FIGURE_NAME = "mean_unique_classifications_together"
+FIGURE_NAME = "mean unique classifications together"
 PATHS = ["boxplot_seresnet152_well_regularized_eps_",
          "boxplot_seresnet152_poorly_regularized_eps_",
          "boxplot_ID_15_ResNet18_eps_",
@@ -59,15 +59,27 @@ print(mean_unique_occurences)
 
 deltas = np.linspace(-0.125, 0.125, 4)
 
-fig = plt.figure(FIGURE_NAME, figsize=(14,4))
+fig = plt.figure(FIGURE_NAME.replace(" ", "_"), figsize=(14,4))
 fig.patch.set_facecolor('white')
 for indx, path in enumerate(PATHS):
     dict_thingy = torch.load(path_from_good_directory(path, FINAL_EPSILON, FINE), map_location=torch.device(DEVICE))
     epsilons = [round(epsilon.item(), 3) for epsilon in dict_thingy["EPSILONS"]]
     mean_unique_occurences = dict_thingy["mean_unique_occurences"]
     unique_occurences = dict_thingy["unique_occurences"]
+    
     x_positions = np.array(range(1,  len(epsilons) + 1))
     
+    plt.plot(x_positions, mean_unique_occurences, color = COLOURS[indx], label = NAMES[indx], marker="o", linewidth = 2)
+
+plt.plot(x_positions, range(1, len(x_positions) + 1), color = "r", linestyle = "--")
+
+for indx, path in enumerate(PATHS):
+    dict_thingy = torch.load(path_from_good_directory(path, FINAL_EPSILON, FINE), map_location=torch.device(DEVICE))
+    epsilons = [round(epsilon.item(), 3) for epsilon in dict_thingy["EPSILONS"]]
+    mean_unique_occurences = dict_thingy["mean_unique_occurences"]
+    unique_occurences = dict_thingy["unique_occurences"]
+    
+    x_positions = np.array(range(1,  len(epsilons) + 1))    
     #print(NAMES[indx])
     lower_quantiles = np.quantile(unique_occurences, 0.25, axis = 1) 
     upper_quantiles = np.quantile(unique_occurences, 0.75, axis = 1)
@@ -82,10 +94,9 @@ for indx, path in enumerate(PATHS):
                 temp2 = np.absolute(unique_occurence - upper_quantiles[idx])
             
             x_vals = [x_positions[idx] + deltas[indx], x_positions[idx] + deltas[indx]]
-            plt.plot(x_vals, [unique_occurence + temp2, unique_occurence - temp1], color = COLOURS[indx], linewidth = 1.2)
-    
-    plt.plot(x_positions, mean_unique_occurences, color = COLOURS[indx], label = NAMES[indx], linewidth = 2.5)
-    
+            plt.plot(x_vals, [unique_occurence + temp2, unique_occurence - temp1], color = COLOURS[indx], linewidth = 1.5)
+
+plt.axis([0, len(epsilons) + 1, 0, 6])           
 plt.xticks(x_positions, epsilons)
 plt.xlabel("Epsilons", fontsize=14)
 plt.ylabel("#Unique classifications", fontsize=14)

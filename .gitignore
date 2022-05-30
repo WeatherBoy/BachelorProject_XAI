@@ -1,9 +1,12 @@
 /data/
 /Bachelor_venv/
-/normal.txt/
 /trainedModels/
 /downloadedJobs/
 /model_insertion/
 /BachelorCode_WorkSpace.code-workspace/
 /network_architectures/
 /models_ordered/
+queue-job.sh
+normal.txt
+BachelorCode_WorkSpace.code-workspace
+dtuhpc.py

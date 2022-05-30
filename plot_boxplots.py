@@ -2,7 +2,6 @@
 
 #%% Imports #######################################################################################
 
-from pandas import NA
 import torch
 from matplotlib import pyplot as plt
 

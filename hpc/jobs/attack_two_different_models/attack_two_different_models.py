@@ -1,6 +1,6 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-# Showing number of different classifications two different 
-# models go through during attack.
+# Showing a number of different classifications on two different 
+# models during attacks.
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 # This program was created on Mon May 16 2022 by Felix Bo Caspersen (s183319), Mathematics and Technology - DTU
 
