@@ -1,27 +1,45 @@
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# Getting some examples of the CIFAR100 dataset
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 #%% Imports #######################################################################################
 
 import torch
 import torchvision
+import os
+
 from matplotlib import pyplot as plt
 
 import numpy as np
 ###################################################################################################
 
-#%% Get data #####################################################################################
+#%% Constants #####################################################################################
 
 BATCH_SIZE = 6
-ROOT_ALTERNATIVE = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/data/datasetCIFAR100"
+ROOT_ALTERNATIVE = "../data/datasetCIFAR100"
+SEED = 42
+###################################################################################################
+
+#%% Configure path and seed #######################################################################
+
+# path configuration
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
+
+# configure the seed
+torch.manual_seed(SEED)
+###################################################################################################
+
+#%% Get data ######################################################################################
 
 trainset = torchvision.datasets.CIFAR100(
-    root="data/datasetCIFAR100", train=True, download=True, transform=torchvision.transforms.ToTensor()
+    root=ROOT_ALTERNATIVE, train=True, download=True, transform=torchvision.transforms.ToTensor()
     )
 
 trainloader = torch.utils.data.DataLoader(
     trainset, batch_size=BATCH_SIZE, shuffle=True
     )
-
-# classes = ("plane", "car", "bird", "cat",
-#           "deer", "dog", "frog", "horse", "ship", "truck")
 
 classes = trainset.classes
 ###################################################################################################
@@ -31,9 +49,13 @@ classes = trainset.classes
 # get some random training images
 # The "iter( )" function makes an object iterable.
 # Meaning that we still can't subscribt it, however we can call the next 
-# "instance" (I guess is an apt name), over and over. 
+# "instance" (I guess it is an apt name), over and over. 
 dataiter = iter(trainloader)
 images, labels = dataiter.next()
+
+# print labels
+label_names = [classes[label] for label in labels]
+print(label_names)
 
 # show images
 img = torchvision.utils.make_grid(images)

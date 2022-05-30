@@ -1,6 +1,15 @@
 import torch
+import os
+
 from matplotlib import pyplot as plt
-import tikzplotlib
+
+from utils import msg
+
+
+# path configuration
+abs_path = os.path.abspath(__file__)
+dir_name = os.path.dirname(abs_path)
+os.chdir(dir_name)
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -8,10 +17,8 @@ print(f"Using {DEVICE} device")
 
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
-good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
+good_dir = "../plottables/"
 save_model_path1 = good_dir + "plottables_VAE_CIFAR100_from_Git_#1" + ".pth"
-save_model_path2 = good_dir + "" + ".pth"
-save_model_path3 = good_dir + "" + ".pth"
 
 checkpoint = torch.load(save_model_path1, map_location=torch.device(DEVICE))
 
@@ -54,4 +61,4 @@ try:
     plt.ylabel("Learning rate")
     plt.show()
 except:
-    print("No learning rates exist!")
+    msg("No learning rates exist!")

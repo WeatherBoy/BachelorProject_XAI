@@ -1,16 +1,36 @@
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# This is a script to plot the relative accuracies of all the 
+# models that we elected to focus on.
+#
+# It's quite poor code as I am not well vested in handling 
+# dictionaries yet. As to why I then decided to use them...
+# it is honestly still a bit of a mystery.
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 #%% Imports ###########################################################################
 
-from turtle import color
 import torch
-import torchvision
+import os
+
 import numpy as np
+
 import matplotlib.pyplot as plt
+
+from utils import msg
 ###################################################################################################
 
 #%% Global constants and configs ###########################################################################
 
 NUM_ADV_EXAMPS = 5
-SEED = 42
+DATA_PATH = "../data/datasetCIFAR100"
+###################################################################################################
+
+#%% Configurations ################################################################################
+
+# path configuration
+abs_path = os.path.abspath(__file__)
+dir_name = os.path.dirname(abs_path)
+os.chdir(dir_name)
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -20,13 +40,18 @@ print(f"Using {DEVICE} device")
 #%% Path stuff #################################################################################### 
 
 def path_from_good_directory(model_name : str):
-    good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
+    good_dir = "../plottables/"
     return good_dir + model_name + ".pth"
 
 # Specify path to the .pth file here.
 # USE FORWARD SLASH!
 paths = [
-    "all_accuracies_eps_03"
+    "seresnet152_good_cifar100_ADV_EXAMPS_Normalized",  # 0
+    "seresnet152_good_cifar100_ADV_EXAMPS",             # 1
+    "seresnet152_bad_cifar100_ADV_EXAMPS",              # 2
+    "accuracies_fgsm_SEResNet152_eps_01_15_steps",      # 3
+    "accuracies_fgsm_SEResNet152_eps_03_15_steps",      # 4
+    "all_accuracies_eps_03"                             # 5
 ]
 
 save_model_path = [path_from_good_directory(path) for path in paths]
@@ -34,18 +59,9 @@ save_model_path = [path_from_good_directory(path) for path in paths]
 
 #%% Getting the data ##############################################################################
 
-dict_thingy = torch.load(save_model_path[0], map_location=torch.device(DEVICE))
+dict_thingy = torch.load(save_model_path[5], map_location=torch.device(DEVICE))
 EPSILONS = dict_thingy["epsilons"]
 EPSILON_STEP_SIZE = EPSILONS[1]
-
-trainval_set = torchvision.datasets.CIFAR100(
-    root = 'data/datasetCIFAR100',
-    train = True,                         
-    transform = torchvision.transforms.ToTensor(), 
-    download = True
-    )
-
-classes = trainval_set.classes # or class_to_idx
 ###################################################################################################
 
 #%% Results #######################################################################################
@@ -69,4 +85,20 @@ try:
     plt.legend(fontsize=16)
     plt.show()
 except:
-    print("There were no accuracies!")
+    # Nested try-except - I have really hit a new low.
+    try:
+        accuracies0 = dict_thingy["accuracies_0"]
+        accuracies1 = dict_thingy["accuracies_1"]
+        plt.figure(figsize=(12,5))
+        plt.plot(EPSILONS, accuracies0, "*-", label="Well regularized (ID: 2)")
+        plt.plot(EPSILONS, accuracies1, "o-", label="Poorly regularized (ID: 1)")
+        plt.yticks(np.arange(0, 1.2, step=0.2), fontsize=12)
+        plt.xticks(np.arange(0, torch.max(EPSILONS) + EPSILON_STEP_SIZE, step=EPSILON_STEP_SIZE)[::3], fontsize=12)
+        plt.title("SEResNet152 well VS. poorly regularized", fontsize=16)
+        plt.xlabel("Epsilon", fontsize=14)
+        plt.ylabel("Accuracy", fontsize=14)
+        plt.legend(fontsize=16)
+        plt.show()
+    except:
+        # Or maybe there were, but they at least didn't fit this code...
+        msg("There were no accuracies!")

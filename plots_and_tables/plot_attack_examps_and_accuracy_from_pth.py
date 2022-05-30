@@ -1,19 +1,39 @@
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# This is a script for plotting accuracies and adversarial
+# examples, in the face of adversarial attacks.
+#
+# There are remnants from when we saved a snail.
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 #%% Imports and configs ###########################################################################
+
 import torch
 import torchvision
+import os
+
 import numpy as np
+
 import matplotlib.pyplot as plt
+###################################################################################################
+
+#%% configurations ###############################################################################
+
+# path configuration
+abs_path = os.path.abspath(__file__)
+dir_name = os.path.dirname(abs_path)
+os.chdir(dir_name)
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using {DEVICE} device")
+###################################################################################################
 
-good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
+#%% Getting the data ##############################################################################
+good_dir = "../plottables/"
 save_model_path1 = good_dir + "seresnet152_good_cifar100_ADV_EXAMPS_Normalized" + ".pth"
 save_model_path2 = good_dir + "seresnet152_good_cifar100_ADV_EXAMPS" + ".pth"
 save_model_path3 = good_dir + "seresnet152_bad_cifar100_ADV_EXAMPS" + ".pth"
 
-#%% Getting the data ##############################################################################
 dict_thingy = torch.load(save_model_path2, map_location=torch.device(DEVICE))
 EPSILONS = dict_thingy["epsilons"]
 EPSILON_STEP_SIZE = EPSILONS[1]
@@ -28,6 +48,7 @@ trainval_set = torchvision.datasets.CIFAR100(
     )
 
 classes = trainval_set.classes # or class_to_idx
+###################################################################################################
 
 #%% Results #######################################################################################
 # We make an **accuracy** vs. **epsilon*** plot and see that there is a clear correlation.
@@ -67,6 +88,4 @@ for i in range(len(EPSILONS)):
         plt.imshow(reshaped_ex)
 plt.tight_layout()
 plt.show()
-
-# SNAIL_PATH = "reshaped_snails.pth"
-# torch.save(reshaped_snails, SNAIL_PATH)
+###################################################################################################

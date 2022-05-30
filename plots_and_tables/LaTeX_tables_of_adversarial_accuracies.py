@@ -1,12 +1,25 @@
-#%% Imports ###########################################################################
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# Create LaTeX tables from the exact numerical values used in
+# our adversarial accuracies plots.
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#%% Imports #######################################################################################
 
 import torch
+import os
+
 import pandas as pd
+
+from utils import msg
 ###################################################################################################
 
-#%% Global constants and configs ###########################################################################
+#%% configs #######################################################################################
 
-SEED = 42
+# path configuration
+abs_path = os.path.abspath(__file__)
+dir_name = os.path.dirname(abs_path)
+os.chdir(dir_name)
+
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -16,7 +29,7 @@ print(f"Using {DEVICE} device")
 #%% Path stuff #################################################################################### 
 
 def path_from_good_directory(model_name : str):
-    good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
+    good_dir = "../plottables/"
     return good_dir + model_name + ".pth"
 
 # Specify path to the .pth file here.
@@ -46,8 +59,8 @@ accuracies1 = dict_thingy["accuracies_1"]
 #%% tables ########################################################################################
 # When are we gonna get tables in minecraft??
 
-
-
+# Inarguably not the proudest I have been when looking at previously written code,
+# but I think it works as intended.
 accuracies_data_frame = pd.DataFrame({
     "Epsilons" : [round(epsilon.item(), 3) for epsilon in EPSILONS],
     "Well regularized (ID: 2)" : [round(accuracy[0], 3) for accuracy in accuracies0],
@@ -66,7 +79,8 @@ try:
         "EfficientNet b7 (ID: 27)" : [round(accuracy[0], 3) for accuracy in accuracies3]
     })
 except:
-    print(" * no more accuracies ;( * ")
+    msg(" no more accuracies ;( ")
     
 accuracies_data_frame_transposed = accuracies_data_frame.transpose()
 print(accuracies_data_frame_transposed.to_latex(index=False))
+###################################################################################################

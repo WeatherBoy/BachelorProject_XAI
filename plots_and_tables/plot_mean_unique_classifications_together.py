@@ -3,12 +3,15 @@
 #%% Imports #######################################################################################
 
 import torch
+import os
+
 from matplotlib import pyplot as plt
 
 import numpy as np
 ###################################################################################################
 
 #%% Global constants  and configuration ###########################################################
+
 FINAL_EPSILON = 0.3
 FINE = True
 
@@ -27,9 +30,14 @@ NAMES = ["SEResNet152 well regularized (ID: 2)",
          # "Transfer_Learning_EffNet_b7",
          # "EfficientNet_b7"
          ]
-SAVE_PATH = "plottables/mean_unique_classifications_together.jpg"
+SAVE_PATH = "../plottables/mean_unique_classifications_together.jpg"
 COLOURS = ["b", "c", "g", "#800080"]
 SECOND_COLOURS = ["r", "y", "k", "magenta"]
+
+# path configuration
+abs_path = os.path.abspath(__file__)
+dir_name = os.path.dirname(abs_path)
+os.chdir(dir_name)
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -42,17 +50,8 @@ def path_from_good_directory(model_name : str, final_epsilon : float, fine : boo
     fineness = ""
     if fine:
         fineness = "_fine"
-    good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/plottables/"
+    good_dir = "../plottables/"
     return good_dir + model_name + str(final_epsilon).replace(".", "") + fineness + ".pth"
-
-"""
-dict_thingy = torch.load(path_from_good_directory(PATH_NAME), map_location=torch.device(DEVICE))
-epsilons = [round(epsilon.item(), 3) for epsilon in dict_thingy["EPSILONS"]]
-mean_unique_occurences = dict_thingy["mean_unique_occurences"]
-unique_occurences = dict_thingy["unique_occurences"]
-x_positions = range(1, len(epsilons) + 1)
-print(mean_unique_occurences)
-"""
 ###################################################################################################
 
 #%% Plotting ######################################################################################
@@ -105,5 +104,4 @@ plt.legend(loc = "upper left", fontsize=12)
 plt.tight_layout()
 plt.grid()
 plt.show()
-# plt.savefig(SAVE_PATH)
 ###################################################################################################

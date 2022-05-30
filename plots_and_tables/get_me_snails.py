@@ -3,11 +3,30 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 # This program was created on Wed May 11 2022 by Felix Bo Caspersen (s183319), Mathematics and Technology - DTU
 
+#%% Imports #######################################################################################
+
 import torch
+import os
+
 import matplotlib.pyplot as plt
+###################################################################################################
+
+#%% device and path configuration #################################################################
+
+# path configuration
+abs_path = os.path.abspath(__file__)
+dir_name = os.path.dirname(abs_path)
+os.chdir(dir_name)
+
+# Device configuration
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Using {DEVICE} device")
+###################################################################################################
+
+#%% snails! #######################################################################################
 
 SNAIL_PATH = "reshaped_snails.pth"
-reshaped_snails = torch.load(SNAIL_PATH)
+reshaped_snails = torch.load(SNAIL_PATH, map_location=torch.device(DEVICE))
 
 # I know this looks sus, but let me explain....
 # *big sigh*
@@ -25,4 +44,4 @@ for indx, snail in enumerate(reshaped_snails):
     axs[indx].set_title(f"Epsilon: {epsilon}\nPrediction: \n{names_after[indx]}", loc="left")
 plt.tight_layout()
 plt.show()
-    
+###################################################################################################    

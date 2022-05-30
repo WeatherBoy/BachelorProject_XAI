@@ -1,13 +1,31 @@
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# A script made to store information about our trained models.
+# We didn't initially think that we would train this many,
+# therefore it wasn't saved originally.
+#
+# BEWARE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# There is a path in this script which is local to my computer,
+# I am unsure whether matplotlib creates the path, where it needs
+# to save the image or whether it just tells you that the
+# directory doesn't exist. In any case, I would propably just
+# refrain from running this script and instead go for:
+#   plot_Accuracy_and_Loss_simple_from_pth.py
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 #%% Imports #######################################################################################
 
 import torch
+import os
+
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 
 import numpy as np
+
+from utils import msg
 ###################################################################################################
 
-#%% Global constants and device configuration #####################################################
+#%% Global constants ##############################################################################
 
 # **************************** #
 # WARNING!!!!!!!!!!!!!!!!!!!!!
@@ -38,6 +56,14 @@ MOMENTUM = "0.9"
 GRAD_CLIP = "Norm to 1"
 DATA_SET_NAME = "cifar100" 
 INDX_ID = 27
+###################################################################################################
+
+#%% Path and device configuration #################################################################
+
+# path configuration
+abs_path = os.path.abspath(__file__)
+dir_name = os.path.dirname(abs_path)
+os.chdir(dir_name)
 
 # Device configuration
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,7 +74,7 @@ PLOT_PATH = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/Billed
 
 #%% Path stuff #################################################################################### 
 def path_from_good_directory(model_name : str):
-    good_dir = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/models_ordered/"
+    good_dir = "../models_ordered/"
     return good_dir + model_name + ".pth"
     
 # Specify path to the .pth file here.
@@ -90,14 +116,13 @@ ID = "0"*(4-len(str(INDX_ID))) + str(INDX_ID)
 #%% Wich model should you show ####################################################################
 
 PATH = save_model_path[(INDX_ID - 1)]
-# PATH = "C:/Users/daflo/Documents/DTU/Semester_6/Bachelor/BachelorXAI/BachelorProject_XAI/downloadedJobs/torchAttack#3_ResNet18_CIFAR100_manxi_parameters_epoch500-8bbe23ee-66a5-4186-8a3f-24b257e8125e/adversarial_ResNet18_cifar100.pth"
 checkpoint = torch.load(PATH, map_location=torch.device(DEVICE))
 
 if PATH[5:9].lower() != "plot":
     PATH = path_from_good_directory(paths[INDX_ID - 1].replace("model", "plot"))
 ###################################################################################################
 
-#%% Plotting #######################################    ###############################################
+#%% Plotting ######################################################################################
 
 print(checkpoint)
 normal_plot = False
@@ -187,6 +212,10 @@ if PLOT_WITH_HYPERPARAMS:
     ax2.set_xlabel("epochs")
     ax2.set_ylabel("AVG loss")
     
+    # I'll be the first to say:
+    # This code should have been a for-loop, but sometimes, you
+    # you wanna do things right, and other times you just
+    # wanna get thing done.
     ax3 = plt.subplot(gs[:, 1])   # all of column 1
     ax3.set_axis_off()
     ax3.text(0, 1.0, f"Model name:", fontweight = "bold")
@@ -220,7 +249,6 @@ try:
     num_LRs = len(learning_rates)
     plt.figure(figsize=(14,4))
     plt.plot(xVals, learning_rates)
-    #plt.title(f"Learning rates over {num_LRs} epochs.")
     plt.xlabel("Epochs")
     plt.ylabel("Learning rate")
     plt.savefig(PLOT_PATH + PLOT_NAME + "_learning_rates" + ".png")
@@ -257,7 +285,7 @@ if SAVE_HYPERPARAMS or FORCE_SAVE_HYPERPARAMS:
             "total_epochs" : num_epochs,
             "ID" : ID
         }, PATH)
-        print("Saved hyperparameters to dict")
+        msg("Saved hyperparameters to dict")
     except KeyError:
         if no_learning_rates:
             torch.save({
@@ -282,6 +310,7 @@ if SAVE_HYPERPARAMS or FORCE_SAVE_HYPERPARAMS:
                 "total_epochs" : num_epochs,
                 "ID" : ID
             }, PATH)
-            print("Saved hyperparameters to dict (without learning rates)")
+            msg("Saved hyperparameters to dict (without learning rates)")
         else:
-            print("Didn't save anything do to missing values!")
+            msg("Didn't save anything do to missing values!")
+###################################################################################################
